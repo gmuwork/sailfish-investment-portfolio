@@ -43,7 +43,6 @@ INSTALLED_APPS = [
 
 MIGRATION_MODULES = {
     "crypto": "migrations",
-    "blockchain": "migrations",
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
