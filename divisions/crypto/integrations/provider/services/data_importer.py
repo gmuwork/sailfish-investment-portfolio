@@ -3,28 +3,26 @@ import logging
 import typing
 
 from backend.divisions.common import utils as common_utils
-from divisions.crypto import models as crypto_models
 from backend.divisions.crypto.integrations.provider import base as base_provider_client
 from backend.divisions.crypto.integrations.provider import enums as provider_enums
 from backend.divisions.crypto.integrations.provider import (
     exceptions as provider_exceptions,
 )
 from backend.divisions.crypto.integrations.provider import messages as provider_messages
+from divisions.crypto import models as crypto_models
 
 
 logger = logging.getLogger(__name__)
 
 
 class CryptoProviderImporter(object):
-    pass
-
     def __init__(self, provider_client: base_provider_client.BaseProvider) -> None:
         self._provider_client = provider_client
         self.log_prefix = "[{}-IMPORTER]".format(self._provider_client.provider.name)
 
     def import_market_instruments(
         self,
-        trading_category: typing.Optional[provider_enums.TradingCategory] = None,
+        trading_category: provider_enums.TradingCategory,
         market_instrument_symbol: typing.Optional[str] = None,
         dry_run=False,
     ) -> None:
@@ -113,24 +111,46 @@ class CryptoProviderImporter(object):
             )
         )
 
-    def import_derivative_pnl_closed_transactions(
+    def import_trade_pnl_transactions(
         self,
+        trading_category: provider_enums.TradingCategory,
         market_instrument_symbol: str,
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
         dry_run=False,
     ) -> None:
-        """
-        TODO: FINISH UP
-        1. If not from_datetime and to_datetime
-        2, Fetch latest pnl transaction and start fetching from that one
-        3. If not transacions return
-        4. Import each transaction
-        """
+        if bool(from_datetime) != bool(to_datetime):
+            logger.info(
+                "{} Provider either both from_datetime and to_datetime or neither. Exiting.".format(
+                    self.log_prefix
+                )
+            )
+            return None
 
+        if not (from_datetime and to_datetime):
+            last_pnl_transaction = (
+                crypto_models.TradePnLTransaction.objects.filter(
+                    provider=self._provider_client.provider.to_integer_choice(),
+                )
+                .order_by("created_at")
+                .last()
+            )
+
+            if not last_pnl_transaction:
+                logger.info(
+                    "{} No PnL transactions found in db (market_instrument_symbol={}, trading_category={}) Exiting.".format(
+                        self.log_prefix,
+                        market_instrument_symbol,
+                        trading_category.name,
+                    )
+                )
+                return None
+
+            from_datetime = last_pnl_transaction.created_at
         try:
             pnl_transactions = (
-                self._provider_client.get_derivative_closed_positions_profit_and_loss(
+                self._provider_client.get_trade_positions_profit_and_loss(
+                    trading_category=trading_category,
                     market_instrument_symbol=market_instrument_symbol,
                     from_datetime=from_datetime,
                     to_datetime=to_datetime,
@@ -141,8 +161,9 @@ class CryptoProviderImporter(object):
         except provider_exceptions.ProviderError as e:
             msg = (
                 "Unable to import pnl closed transactions ("
-                " market_instrument_symbol={}). Error: {}".format(
+                " market_instrument_symbol={}, trading_category={}). Error: {}".format(
                     market_instrument_symbol,
+                    trading_category.name,
                     common_utils.get_exception_message(exception=e),
                 )
             )
@@ -152,15 +173,16 @@ class CryptoProviderImporter(object):
 
         if not pnl_transactions:
             logger.info(
-                "{} No pnl closed transactions fetched (market_instrument_symbol={}). Exiting.".format(
+                "{} No PnL closed transactions fetched (market_instrument_symbol={}, trading_category={}). Exiting.".format(
                     self.log_prefix,
                     market_instrument_symbol,
+                    trading_category.name,
                 )
             )
             return None
 
         logger.info(
-            "{} Fetched {} pnl closed transactions to import.".format(
+            "{} Fetched {} PnL transactions to import.".format(
                 self.log_prefix, len(pnl_transactions)
             )
         )
@@ -171,25 +193,23 @@ class CryptoProviderImporter(object):
                     pnl_transaction=pnl_transaction, dry_run=dry_run
                 )
             except Exception as e:
-                msg = (
-                    "Unexpected exception occurred while importing pnl transactions"
-                    " (market_instrument_symbol={}). Error: {}".format(
-                        pnl_transaction.market_instrument_name,
-                        common_utils.get_exception_message(exception=e),
-                    )
+                msg = "Unexpected exception occurred while importing pnl transactions" " (market_instrument_symbol={}, trading_category={}). Error: {}".format(
+                    pnl_transaction.market_instrument_name,
+                    trading_category.name,
+                    common_utils.get_exception_message(exception=e),
                 )
                 logger.exception("{} {}. Continue.".format(self.log_prefix, msg))
                 continue
 
     def _import_pnl_transaction(
-        self, pnl_transaction: provider_messages.DerivativePnLPosition, dry_run: bool
+        self, pnl_transaction: provider_messages.TradePnLPosition, dry_run: bool
     ) -> None:
-        if crypto_models.DerivativePnLClosedTransaction.objects.filter(
+        if crypto_models.TradePnLTransaction.objects.filter(
             order_id=pnl_transaction.order_id,
             provider=self._provider_client.provider.to_integer_choice(),
         ).exists():
             logger.info(
-                "{} PnL closed transaction already exists (market_instrument_symbol={}, order_id={}). Exiting.".format(
+                "{} PnL transaction already exists (market_instrument_symbol={}, order_id={}). Exiting.".format(
                     self.log_prefix,
                     pnl_transaction.market_instrument_name,
                     pnl_transaction.order_id,
@@ -199,13 +219,13 @@ class CryptoProviderImporter(object):
 
         if dry_run:
             logger.info(
-                "{} [DRY-RUN] Would create PnL closed transaction (market_instrument_symbol={}, order_id={}). Exiting.".format(
+                "{} [DRY-RUN] Would create PnL transaction (market_instrument_symbol={}, order_id={}). Exiting.".format(
                     self.log_prefix,
                     pnl_transaction.market_instrument_name,
                     pnl_transaction.order_id,
                 )
             )
-        crypto_models.DerivativePnLClosedTransaction.objects.create(
+        crypto_models.TradePnLTransaction.objects.create(
             instrument_name=pnl_transaction.market_instrument_name,
             order_id=pnl_transaction.order_id,
             position_side=pnl_transaction.position_side,
@@ -223,7 +243,7 @@ class CryptoProviderImporter(object):
         )
 
         logger.info(
-            "{} Created PnL closed transaction (market_instrument_symbol={}, order_id={}).".format(
+            "{} Created PnL transaction (market_instrument_symbol={}, order_id={}).".format(
                 self.log_prefix,
                 pnl_transaction.market_instrument_name,
                 pnl_transaction.order_id,

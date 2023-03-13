@@ -23,7 +23,7 @@ class MarketInstruments(schema.Schema):
         return {"market_instruments": data}
 
 
-class DerivativePosition(schema.Schema):
+class TradePosition(schema.Schema):
     class Meta:
         unknown = EXCLUDE
 
@@ -42,15 +42,15 @@ class DerivativePosition(schema.Schema):
         return data
 
 
-class DerivativePositions(schema.Schema):
-    derivative_positions = fields.Nested(DerivativePosition, many=True)
+class TradePositions(schema.Schema):
+    trade_positions = fields.Nested(TradePosition, many=True)
 
     @pre_load
     def prepare_data(self, data: typing.List[dict], **kwargs: typing.Any) -> dict:
-        return {"derivative_positions": data}
+        return {"trade_positions": data}
 
 
-class DerivativePnLPosition(schema.Schema):
+class TradePnLPosition(schema.Schema):
     class Meta:
         unknown = EXCLUDE
 
@@ -74,9 +74,9 @@ class DerivativePnLPosition(schema.Schema):
         return data
 
 
-class DerivativePnLPositions(schema.Schema):
-    derivative_pnl_positions = fields.Nested(DerivativePnLPosition, many=True)
+class TradePnLPositions(schema.Schema):
+    trade_pnl_positions = fields.Nested(TradePnLPosition, many=True)
 
     @pre_load
     def prepare_data(self, data: typing.List[dict], **kwargs: typing.Any) -> dict:
-        return {"derivative_pnl_positions": data}
+        return {"trade_pnl_positions": data}

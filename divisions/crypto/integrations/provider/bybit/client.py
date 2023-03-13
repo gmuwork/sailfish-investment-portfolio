@@ -38,9 +38,9 @@ class ByBitProvider(base.BaseProvider):
 
     def get_market_instruments(
         self,
+        trading_category: enums.TradingCategory,
         depth: int = 1,
         limit: int = 50,
-        trading_category: typing.Optional[enums.TradingCategory] = None,
         market_instrument_symbol: typing.Optional[str] = None,
     ) -> typing.List[messages.MarketInstrument]:
         # TODO: Add trading category conversion to internal
@@ -50,6 +50,7 @@ class ByBitProvider(base.BaseProvider):
                 depth=depth,
                 limit=limit,
                 symbol=market_instrument_symbol,
+                category=trading_category.value,
             )
         except rest_api_client_exceptions.ByBitClientError as e:
             msg = "Unable to fetch market instruments from API (market_instrument_symbol={}, trading_category={}). Error: {}".format(
@@ -75,57 +76,70 @@ class ByBitProvider(base.BaseProvider):
             for market_instrument in validated_data["market_instruments"]
         ]
 
-    def get_derivative_positions(
-        self, market_instrument_symbol: str, depth: int = 1, limit: int = 50
-    ) -> typing.List[messages.DerivativePosition]:
+    def get_trade_positions(
+        self,
+        trading_category: enums.TradingCategory,
+        market_instrument_symbol: str,
+        depth: int = 1,
+        limit: int = 50,
+    ) -> typing.List[messages.TradePosition]:
         try:
             response = self.get_rest_api_client().get_derivative_positions(
                 depth=depth,
                 symbol=market_instrument_symbol,
+                category=trading_category.value,
             )
         except rest_api_client_exceptions.ByBitClientError as e:
-            msg = "Unable to fetch derivative positions from API (market_instrument_symbol={}). Error: {}".format(
+            msg = "Unable to fetch trade positions from API (market_instrument_symbol={}, category={}). Error: {}".format(
                 market_instrument_symbol,
+                trading_category.name,
                 common_utils.get_exception_message(exception=e),
             )
             self.logger.exception("{} {}.".format(self.log_prefix, msg))
             raise exceptions.APIClientError(msg)
 
         validated_data = self._validate_marshmallow_schema(
-            data=response, schema=schemas.DerivativePositions()
+            data=response, schema=schemas.TradePositions()
         )
         if not validated_data:
             raise exceptions.DataValidationError(
-                "Derivative positions response data is not valid"
+                "Trade positions response data is not valid"
             )
 
         return [
-            messages.DerivativePosition(
-                market_instrument_name=derivative_position["symbol"],
-                position_side=derivative_position["side"],
-                position_size=derivative_position["size"],
-                position_value=derivative_position["value"],
-                entry_price=derivative_position["entry_price"],
+            messages.TradePosition(
+                market_instrument_name=trade_position["symbol"],
+                position_side=trade_position["side"],
+                position_size=trade_position["size"],
+                position_value=trade_position["value"],
+                entry_price=trade_position["entry_price"],
                 created_at=datetime.datetime.fromtimestamp(
-                    derivative_position["created_at"]
+                    trade_position["created_at"]
                 ),
                 updated_at=datetime.datetime.fromtimestamp(
-                    derivative_position["updated_at"]
+                    trade_position["updated_at"]
                 ),
             )
-            for derivative_position in validated_data["derivative_positions"]
+            for trade_position in validated_data["trade_positions"]
         ]
 
-    def get_derivative_closed_positions_profit_and_loss(
+    def get_trade_positions_profit_and_loss(
         self,
+        trading_category: enums.TradingCategory,
         market_instrument_symbol: str,
         depth: int = 1,
         limit: int = 50,
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
-    ) -> typing.List[messages.DerivativePnLPosition]:
+    ) -> typing.List[messages.TradePnLPosition]:
+        if trading_category != enums.TradingCategory.LINEAR:
+            msg = "Trading category {} not supported".format(trading_category.name)
+            self.logger.error("{} {}.".format(self.log_prefix, msg))
+            raise exceptions.TradingCategoryNotSupportedError(msg)
+
         try:
-            response = self.get_rest_api_client().get_derivative_closed_positions_profit_and_loss(
+            response = self.get_rest_api_client().get_trade_positions_profit_and_loss(
+                category=trading_category.value,
                 depth=depth,
                 limit=limit,
                 symbol=market_instrument_symbol,
@@ -133,8 +147,9 @@ class ByBitProvider(base.BaseProvider):
                 to_datetime=to_datetime,
             )
         except rest_api_client_exceptions.ByBitClientError as e:
-            msg = "Unable to fetch derivative positions PnL from API (market_instrument_symbol={}, from_datetime={}, to_datetime={}). Error: {}".format(
+            msg = "Unable to fetch trade positions PnL from API (market_instrument_symbol={}, category={}, from_datetime={}, to_datetime={}). Error: {}".format(
                 market_instrument_symbol,
+                trading_category.name,
                 from_datetime,
                 to_datetime,
                 common_utils.get_exception_message(exception=e),
@@ -143,30 +158,30 @@ class ByBitProvider(base.BaseProvider):
             raise exceptions.APIClientError(msg)
 
         validated_data = self._validate_marshmallow_schema(
-            data=response, schema=schemas.DerivativePnLPositions()
+            data=response, schema=schemas.TradePnLPositions()
         )
         if not validated_data:
             raise exceptions.DataValidationError(
-                "Derivative positions PnL response data is not valid"
+                "Trade positions PnL response data is not valid"
             )
 
         return [
-            messages.DerivativePnLPosition(
-                market_instrument_name=derivative_position["symbol"],
-                position_side=derivative_position["side"],
-                order_id=derivative_position["order_id"],
-                position_quantity=derivative_position["quantity"],
-                order_price=derivative_position["order_price"],
-                order_type=derivative_position["order_type"],
-                position_closed_size=derivative_position["closed_size"],
-                total_entry_value=derivative_position["total_entry_value"],
-                average_entry_price=derivative_position["average_entry_price"],
-                total_exit_value=derivative_position["total_exit_value"],
-                average_exit_price=derivative_position["average_exit_value"],
-                closed_pnl=derivative_position["closed_pnl"],
+            messages.TradePnLPosition(
+                market_instrument_name=trade_position["symbol"],
+                position_side=trade_position["side"],
+                order_id=trade_position["order_id"],
+                position_quantity=trade_position["quantity"],
+                order_price=trade_position["order_price"],
+                order_type=trade_position["order_type"],
+                position_closed_size=trade_position["closed_size"],
+                total_entry_value=trade_position["total_entry_value"],
+                average_entry_price=trade_position["average_entry_price"],
+                total_exit_value=trade_position["total_exit_value"],
+                average_exit_price=trade_position["average_exit_value"],
+                closed_pnl=trade_position["closed_pnl"],
                 created_at=datetime.datetime.fromtimestamp(
-                    derivative_position["created_at"]
+                    trade_position["created_at"]
                 ),
             )
-            for derivative_position in validated_data["derivative_pnl_positions"]
+            for trade_position in validated_data["trade_pnl_positions"]
         ]

@@ -12,3 +12,7 @@ class NoEligibleProviderFoundError(ProviderError):
 
 class DataValidationError(ProviderError):
     pass
+
+
+class TradingCategoryNotSupportedError(ProviderError):
+    pass

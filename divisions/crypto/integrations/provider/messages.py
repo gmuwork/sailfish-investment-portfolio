@@ -2,6 +2,8 @@ import datetime
 import decimal
 import typing
 
+from backend.divisions.crypto import enums as crypto_enums
+from backend.divisions.crypto.integrations.provider import enums
 
 class MarketInstrument(
     typing.NamedTuple(
@@ -18,9 +20,9 @@ class MarketInstrument(
 MarketInstrument.__new__.__defaults__ = (None,) * len(MarketInstrument._fields)
 
 
-class DerivativePosition(
+class TradePosition(
     typing.NamedTuple(
-        "DerivativePosition",
+        "TradePosition",
         [
             ("market_instrument_name", str),
             ("position_side", str),
@@ -35,12 +37,12 @@ class DerivativePosition(
     __slots__ = ()
 
 
-DerivativePosition.__new__.__defaults__ = (None,) * len(DerivativePosition._fields)
+TradePosition.__new__.__defaults__ = (None,) * len(TradePosition._fields)
 
 
-class DerivativePnLPosition(
+class TradePnLPosition(
     typing.NamedTuple(
-        "DerivativePnLPosition",
+        "TradePnLPosition",
         [
             ("market_instrument_name", str),
             ("order_id", str),
@@ -61,6 +63,27 @@ class DerivativePnLPosition(
     __slots__ = ()
 
 
-DerivativePnLPosition.__new__.__defaults__ = (None,) * len(
-    DerivativePnLPosition._fields
+TradePnLPosition.__new__.__defaults__ = (None,) * len(TradePnLPosition._fields)
+
+
+class TradePositionPerformance(
+    typing.NamedTuple(
+        "TradePositionPerformance",
+        [
+            ("market_instrument_name", str),
+            ("provider", crypto_enums.CryptoProvider),
+            ("trading_category", enums.TradingCategory),
+            ("year", typing.Optional[int]),
+            ("month", typing.Optional[int]),
+            ("week", typing.Optional[int]),
+            ("day", typing.Optional[int]),
+            ("pnl", decimal.Decimal),
+        ],
+    )
+):
+    __slots__ = ()
+
+
+TradePositionPerformance.__new__.__defaults__ = (None,) * len(
+    TradePositionPerformance._fields
 )

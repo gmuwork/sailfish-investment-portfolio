@@ -11,4 +11,4 @@ def get_exception_message(exception: Exception) -> str:
 
 
 def convert_timestamp_to_milliseconds(timestamp: typing.Union[int, float]) -> int:
-    return timestamp * 10 ** 3
+    return int(timestamp * 10 ** 3)

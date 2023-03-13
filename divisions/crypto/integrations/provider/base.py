@@ -33,28 +33,29 @@ class BaseProvider(object):
     @abc.abstractmethod
     def get_market_instruments(
         self,
+        trading_category: enums.TradingCategory,
         depth: int = 1,
         limit: int = 50,
-        trading_category: typing.Optional[enums.TradingCategory] = None,
         market_instrument_symbol: typing.Optional[str] = None,
     ) -> typing.List[messages.MarketInstrument]:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_derivative_positions(
-        self, market_instrument_symbol: str, depth: int = 1, limit: int = 50
-    ) -> typing.List[messages.DerivativePosition]:
+    def get_trade_positions(
+        self, trading_category: enums.TradingCategory, market_instrument_symbol: str, depth: int = 1, limit: int = 50
+    ) -> typing.List[messages.TradePosition]:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_derivative_closed_positions_profit_and_loss(
+    def get_trade_positions_profit_and_loss(
         self,
+        trading_category: enums.TradingCategory,
         market_instrument_symbol: str,
         depth: int = 1,
         limit: int = 50,
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
-    ) -> typing.List[messages.DerivativePnLPosition]:
+    ) -> typing.List[messages.TradePnLPosition]:
         raise NotImplementedError
 
     def _validate_marshmallow_schema(

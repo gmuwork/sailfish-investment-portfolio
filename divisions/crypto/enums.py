@@ -16,3 +16,10 @@ class CryptoProvider(enum.Enum):
 class TradingSide(enum.Enum):
     BUY = "buy"
     SELL = "sell"
+
+
+class AggregationPeriod(enum.Enum):
+    DAY = 1
+    MONTH = 2
+    WEEK = 3
+    YEAR = 4

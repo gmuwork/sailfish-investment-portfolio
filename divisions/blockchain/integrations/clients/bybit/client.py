@@ -26,23 +26,20 @@ class ByBitClient(object):
     API_KEY = settings.BYBIT_API_KEY
     API_SECRET_KEY = settings.BYBIT_API_SECRET_KEY
     VALID_STATUS_CODES = [200, 201, 204]
-    REQUEST_EXPIRATION = 5000  # value in ms
+    REQUEST_EXPIRATION = 10000  # value in ms
 
     LOG_PREFIX = "[BYBIT-CLIENT]"
 
     def get_market_instruments(
         self,
+        category: str,
         depth: int = 1,
         limit: int = 50,
-        category: typing.Optional[enums.TradingCategory] = None,
         symbol: typing.Optional[str] = None,
     ) -> typing.List[dict]:
-        params = {"limit": limit}
+        params = {"limit": limit, "category": category}
         if symbol:
             params["symbol"] = symbol
-
-        if category:
-            params["category"] = category.value
 
         return self._get_paginated_response(
             endpoint="/derivatives/v3/public/instruments-info",
@@ -52,26 +49,59 @@ class ByBitClient(object):
             depth=depth,
         )
 
-    def get_derivative_positions(
-        self, depth: int = 1, symbol: typing.Optional[str] = None
+    def get_trade_orders(
+        self,
+        category: str,
+        depth: int = 1,
+        limit: int = 50,
+        symbol: typing.Optional[str] = None,
+        order_id: typing.Optional[str] = None,
+        order_status: typing.Optional[str] = None,
+        order_filter: typing.Optional[str] = None,
     ) -> typing.List[dict]:
+        params = {"limit": limit, "category": category}
+
+        if symbol:
+            params["symbol"] = symbol
+
+        if order_id:
+            params["orderId"] = order_id
+
+        if order_status:
+            params["orderStatus"] = order_status
+
+        if order_filter:
+            params["orderFilter"] = order_filter
+
         return self._get_paginated_response(
-            endpoint="/contract/v3/private/position/list",
+            endpoint="/contract/v3/private/order/list",
             method=common_enums.HttpMethod.GET,
-            params={"symbol": symbol},
+            params=params,
             data_field="list",
             depth=depth,
         )
 
-    def get_derivative_closed_positions_profit_and_loss(
+    def get_trade_positions(
+        self, category: str, depth: int = 1, symbol: typing.Optional[str] = None
+    ) -> typing.List[dict]:
+        return self._get_paginated_response(
+            endpoint="/contract/v3/private/position/list",
+            method=common_enums.HttpMethod.GET,
+            params={"symbol": symbol, "category": category},
+            data_field="list",
+            depth=depth,
+        )
+
+    def get_trade_positions_profit_and_loss(
         self,
+        category: str,
         symbol: str,
         depth: int = 1,
         limit: int = 50,
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
     ) -> typing.List[dict]:
-        params = {"symbol": symbol, "limit": limit}
+        params = {"symbol": symbol, "limit": limit, "category": category}
 
         if from_datetime:
             params["startTime"] = common_utils.convert_timestamp_to_milliseconds(

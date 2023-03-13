@@ -15,7 +15,7 @@ class MarketInstrument(models.Model):
         unique_together = ["name", "provider"]
 
 
-class DerivativePnLClosedTransaction(models.Model):
+class TradePnLTransaction(models.Model):
     # TODO: Instrument name can be FK to MarketInstrument
     instrument_name = models.CharField(max_length=255, null=False)
     order_id = models.CharField(max_length=255, null=False, unique=True)
@@ -50,4 +50,4 @@ class DerivativePnLClosedTransaction(models.Model):
 
     class Meta:
         app_label = "crypto"
-        db_table = "crypto_derivativepnltransaction"
+        db_table = "crypto_tradepnltransaction"
