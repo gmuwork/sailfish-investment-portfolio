@@ -5,6 +5,7 @@ import typing
 from backend.divisions.crypto import enums as crypto_enums
 from backend.divisions.crypto.integrations.provider import enums
 
+
 class MarketInstrument(
     typing.NamedTuple(
         "MarketInstrument",
@@ -87,3 +88,29 @@ class TradePositionPerformance(
 TradePositionPerformance.__new__.__defaults__ = (None,) * len(
     TradePositionPerformance._fields
 )
+
+
+class TradeOrder(
+    typing.NamedTuple(
+        "TradeOrder",
+        [
+            ("market_instrument_name", str),
+            ("order_id", str),
+            ("order_side", str),
+            ("order_quantity", decimal.Decimal),
+            ("order_price", decimal.Decimal),
+            ("average_order_price", decimal.Decimal),
+            ("order_type", str),
+            ("order_status", str),
+            ("order_total_executed_value", decimal.Decimal),
+            ("order_total_executed_quantity", decimal.Decimal),
+            ("order_total_executed_fee", decimal.Decimal),
+            ("created_at", datetime.datetime),
+            ("updated_at", datetime.datetime),
+        ],
+    )
+):
+    __slots__ = ()
+
+
+TradeOrder.__new__.__defaults__ = (None,) * len(TradeOrder._fields)

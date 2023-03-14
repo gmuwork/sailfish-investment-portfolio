@@ -74,7 +74,7 @@ class ByBitClient(object):
             params["orderFilter"] = order_filter
 
         return self._get_paginated_response(
-            endpoint="/contract/v3/private/order/list",
+            endpoint="/v5/order/history",
             method=common_enums.HttpMethod.GET,
             params=params,
             data_field="list",
@@ -82,12 +82,28 @@ class ByBitClient(object):
         )
 
     def get_trade_positions(
-        self, category: str, depth: int = 1, symbol: typing.Optional[str] = None
+        self, symbol: str, category: str, limit: int = 50, depth: int = 1
     ) -> typing.List[dict]:
         return self._get_paginated_response(
-            endpoint="/contract/v3/private/position/list",
+            endpoint="/v5/position/list",
             method=common_enums.HttpMethod.GET,
-            params={"symbol": symbol, "category": category},
+            params={"symbol": symbol, "category": category, "limit": limit},
+            data_field="list",
+            depth=depth,
+        )
+
+    def get_trade_executions(
+        self, symbol: str, category: str, order_id: str, limit: int = 50, depth: int = 1
+    ) -> typing.List[dict]:
+        return self._get_paginated_response(
+            endpoint="/v5/execution/list",
+            method=common_enums.HttpMethod.GET,
+            params={
+                "symbol": symbol,
+                "category": category,
+                "limit": limit,
+                "orderId": order_id,
+            },
             data_field="list",
             depth=depth,
         )
@@ -114,11 +130,54 @@ class ByBitClient(object):
             )
 
         return self._get_paginated_response(
-            endpoint="/contract/v3/private/position/closed-pnl",
+            endpoint="/v5/position/closed-pnl",
             method=common_enums.HttpMethod.GET,
             params=params,
             depth=depth,
             data_field="list",
+        )
+
+    def get_transactions(
+        self,
+        depth: int = 1,
+        limit: int = 50,
+        account_type: typing.Optional[str] = None,
+        category: typing.Optional[str] = None,
+        currency: typing.Optional[str] = None,
+        transaction_type: typing.Optional[str] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
+    ) -> typing.List[dict]:
+        params = {"limit": limit}
+
+        if account_type:
+            params["accountType"] = account_type
+
+        if category:
+            params["category"] = category
+
+        if currency:
+            params["currency"] = currency
+
+        if transaction_type:
+            params["type"] = transaction_type
+
+        if from_datetime:
+            params["startTime"] = common_utils.convert_timestamp_to_milliseconds(
+                timestamp=from_datetime.timestamp()
+            )
+
+        if to_datetime:
+            params["endTime"] = common_utils.convert_timestamp_to_milliseconds(
+                timestamp=to_datetime.timestamp()
+            )
+
+        return self._get_paginated_response(
+            endpoint="/v5/account/transaction-log",
+            method=common_enums.HttpMethod.GET,
+            params=params,
+            data_field="list",
+            depth=depth,
         )
 
     def _get_response_content(self, response: requests.Response) -> dict:

@@ -42,7 +42,11 @@ class BaseProvider(object):
 
     @abc.abstractmethod
     def get_trade_positions(
-        self, trading_category: enums.TradingCategory, market_instrument_symbol: str, depth: int = 1, limit: int = 50
+        self,
+        trading_category: enums.TradingCategory,
+        market_instrument_symbol: str,
+        depth: int = 1,
+        limit: int = 50,
     ) -> typing.List[messages.TradePosition]:
         raise NotImplementedError
 
@@ -56,6 +60,19 @@ class BaseProvider(object):
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
     ) -> typing.List[messages.TradePnLPosition]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_trade_orders(
+        self,
+        trading_category: enums.TradingCategory,
+        depth: int = 1,
+        limit: int = 50,
+        market_instrument_symbol: typing.Optional[str] = None,
+        order_id: typing.Optional[str] = None,
+        order_status: typing.Optional[enums.TradeOrderStatus] = None,
+        order_filter: typing.Optional[str] = None,
+    ) -> typing.List[messages.TradeOrder]:
         raise NotImplementedError
 
     def _validate_marshmallow_schema(

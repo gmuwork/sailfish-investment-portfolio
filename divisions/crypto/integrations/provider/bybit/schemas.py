@@ -80,3 +80,37 @@ class TradePnLPositions(schema.Schema):
     @pre_load
     def prepare_data(self, data: typing.List[dict], **kwargs: typing.Any) -> dict:
         return {"trade_pnl_positions": data}
+
+
+class TradeOrder(schema.Schema):
+    class Meta:
+        unknown = EXCLUDE
+
+    symbol = fields.Str(required=True, data_key="symbol")
+    order_id = fields.Str(required=True, data_key="orderId")
+    side = fields.Str(required=True, allow_none=True, data_key="side")
+    quantity = fields.Decimal(required=True, data_key="qty")
+    order_price = fields.Decimal(required=True, data_key="price")
+    average_price = fields.Decimal(required=True, data_key="avgPrice")
+    order_type = fields.Str(required=True, data_key="orderType")
+    order_status = fields.Str(required=True, data_key="orderStatus")
+    total_executed_value = fields.Decimal(required=True, data_key="cumExecValue")
+    total_executed_quantity = fields.Decimal(required=True, data_key="cumExecQty")
+    total_executed_fee = fields.Decimal(required=True, data_key="cumExecFee")
+    created_at = fields.Integer(required=True, data_key="createdTime")
+    updated_at = fields.Integer(required=True, data_key="updatedTime")
+
+    @post_load
+    def prepare_data(self, data: dict, **kwargs: typing.Any) -> dict:
+        data["created_at"] = data["created_at"] // 1000
+        data["updated_at"] = data["updated_at"] // 1000
+
+        return data
+
+
+class TradeOrders(schema.Schema):
+    trade_orders = fields.Nested(TradeOrder, many=True)
+
+    @pre_load
+    def prepare_data(self, data: typing.List[dict], **kwargs: typing.Any) -> dict:
+        return {"trade_orders": data}

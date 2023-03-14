@@ -111,6 +111,58 @@ class CryptoProviderImporter(object):
             )
         )
 
+    def import_trade_orders(
+        self,
+        trading_category: provider_enums.TradingCategory,
+        market_instrument_symbol: str,
+        order_status: typing.Optional[provider_enums.TradeOrderStatus] = None,
+        order_id: typing.Optional[str] = None,
+        dry_run: bool = False,
+    ) -> None:
+        try:
+            trade_orders = self._provider_client.get_trade_orders(
+                trading_category=trading_category,
+                market_instrument_symbol=market_instrument_symbol,
+                order_id=order_id,
+                order_status=order_status,
+            )
+        except provider_exceptions.ProviderError as e:
+            msg = (
+                "Unable to import trade orders instruments (trading_category={},"
+                " market_instrument_symbol={}). Error: {}".format(
+                    trading_category.name,
+                    market_instrument_symbol,
+                    common_utils.get_exception_message(exception=e),
+                )
+            )
+            logger.exception("{} {}.".format(self.log_prefix, msg))
+            # TODO: Send mail to managers
+            return None
+
+        if not trade_orders:
+            logger.info(
+                "{} No trade orders fetched (trading_category={}, market_instrument_symbol={}). Exiting.".format(
+                    self.log_prefix, trading_category.name, market_instrument_symbol
+                )
+            )
+            return None
+
+        for trade_order in trade_orders:
+            try:
+                self._import_trade_order(trade_order=trade_order, dry_run=dry_run)
+            except Exception as e:
+                msg = "Unexpected exception occurred while importing trade order (market_instrument_symbol={}, trading_category={}). Error: {}".format(
+                    trade_order.market_instrument_name,
+                    trading_category.name,
+                    common_utils.get_exception_message(exception=e),
+                )
+                logger.exception("{} {}. Continue.".format(self.log_prefix, msg))
+
+    def _import_trade_order(
+        self, trade_order: crypto_models.TradeOrder, dry_run: bool
+    ) -> None:
+        pass
+
     def import_trade_pnl_transactions(
         self,
         trading_category: provider_enums.TradingCategory,
@@ -131,6 +183,7 @@ class CryptoProviderImporter(object):
             last_pnl_transaction = (
                 crypto_models.TradePnLTransaction.objects.filter(
                     provider=self._provider_client.provider.to_integer_choice(),
+                    instrument_name=market_instrument_symbol,
                 )
                 .order_by("created_at")
                 .last()

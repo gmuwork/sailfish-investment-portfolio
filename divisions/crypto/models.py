@@ -15,38 +15,81 @@ class MarketInstrument(models.Model):
         unique_together = ["name", "provider"]
 
 
-class TradePnLTransaction(models.Model):
+class TradeOrder(models.Model):
     # TODO: Instrument name can be FK to MarketInstrument
     instrument_name = models.CharField(max_length=255, null=False)
     order_id = models.CharField(max_length=255, null=False, unique=True)
-    position_side = models.CharField(max_length=255, null=False)
-    position_quantity = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0"), null=False
+    order_side = models.CharField(max_length=255, null=True)
+    order_quantity = models.DecimalField(
+        decimal_places=8,
+        max_digits=21,
+        default=decimal.Decimal("0"),
     )
     order_price = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0"), null=False
+        decimal_places=8,
+        max_digits=21,
+        default=decimal.Decimal("0"),
     )
-    order_type = models.CharField(max_length=255, null=False)
-    position_closed_size = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0"), null=False
+    average_order_price = models.DecimalField(
+        decimal_places=8,
+        max_digits=21,
+        default=decimal.Decimal("0"),
     )
-    total_entry_value = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0"), null=False
+    order_type = models.CharField(max_length=255, null=True)
+    order_status = models.CharField(max_length=255, null=True)
+    order_total_executed_value = models.DecimalField(
+        decimal_places=8,
+        max_digits=21,
+        default=decimal.Decimal("0"),
     )
-    average_entry_price = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0"), null=False
+    order_total_executed_quantity = models.DecimalField(
+        decimal_places=8,
+        max_digits=21,
+        default=decimal.Decimal("0"),
     )
-    total_exit_value = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0"), null=False
-    )
-    average_exit_price = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0"), null=False
-    )
-    closed_pnl = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0"), null=False
+    order_total_executed_fee = models.DecimalField(
+        decimal_places=8,
+        max_digits=21,
+        default=decimal.Decimal("0"),
     )
     created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
     provider = models.PositiveSmallIntegerField()
+
+    class Meta:
+        app_label = "crypto"
+        db_table = "crypto_tradeordertransaction"
+
+
+class TradePnLTransaction(models.Model):
+    # TODO: Instrument name can be FK to MarketInstrument
+    instrument_name = models.CharField(max_length=255, null=False)
+    position_quantity = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    position_closed_size = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    total_entry_value = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    average_entry_price = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    total_exit_value = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    average_exit_price = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    closed_pnl = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    created_at = models.DateTimeField()
+
+    order = models.ForeignKey(
+        TradeOrder, on_delete=models.CASCADE, related_name="pnl_transaction", null=True
+    )
 
     class Meta:
         app_label = "crypto"

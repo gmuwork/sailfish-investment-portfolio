@@ -84,7 +84,7 @@ class ByBitProvider(base.BaseProvider):
         limit: int = 50,
     ) -> typing.List[messages.TradePosition]:
         try:
-            response = self.get_rest_api_client().get_derivative_positions(
+            response = self.get_rest_api_client().get_trade_positions(
                 depth=depth,
                 symbol=market_instrument_symbol,
                 category=trading_category.value,
@@ -184,4 +184,60 @@ class ByBitProvider(base.BaseProvider):
                 ),
             )
             for trade_position in validated_data["trade_pnl_positions"]
+        ]
+
+    def get_trade_orders(
+        self,
+        trading_category: enums.TradingCategory,
+        depth: int = 1,
+        limit: int = 50,
+        market_instrument_symbol: typing.Optional[str] = None,
+        order_id: typing.Optional[str] = None,
+        order_status: typing.Optional[enums.TradeOrderStatus] = None,
+        order_filter: typing.Optional[str] = None,
+    ) -> typing.List[messages.TradeOrder]:
+        try:
+            response = self.get_rest_api_client().get_trade_orders(
+                category=trading_category.value,
+                depth=depth,
+                limit=limit,
+                symbol=market_instrument_symbol,
+                order_id=order_id,
+                order_status=order_status.value if order_status else None,
+                order_filter=order_filter,
+            )
+        except rest_api_client_exceptions.ByBitClientError as e:
+            msg = "Unable to fetch trade orders from API (market_instrument_symbol={}, category={}). Error: {}".format(
+                market_instrument_symbol,
+                trading_category.name,
+                common_utils.get_exception_message(exception=e),
+            )
+            self.logger.exception("{} {}.".format(self.log_prefix, msg))
+            raise exceptions.APIClientError(msg)
+
+        validated_data = self._validate_marshmallow_schema(
+            data=response, schema=schemas.TradeOrders()
+        )
+        if not validated_data:
+            raise exceptions.DataValidationError(
+                "Trade orders response data is not valid"
+            )
+
+        return [
+            messages.TradeOrder(
+                market_instrument_name=trade_order["symbol"],
+                order_id=trade_order["order_id"],
+                order_side=trade_order["side"],
+                order_quantity=trade_order["quantity"],
+                order_price=trade_order["order_price"],
+                average_order_price=trade_order["average_price"],
+                order_type=trade_order["order_type"],
+                order_status=trade_order["order_status"],
+                order_total_executed_value=trade_order["total_executed_value"],
+                order_total_executed_quantity=trade_order["total_executed_quantity"],
+                order_total_executed_fee=trade_order["total_executed_fee"],
+                created_at=datetime.datetime.fromtimestamp(trade_order["created_at"]),
+                updated_at=datetime.datetime.fromtimestamp(trade_order["updated_at"]),
+            )
+            for trade_order in validated_data["trade_orders"]
         ]
