@@ -3,6 +3,7 @@ import logging
 import typing
 
 from backend.divisions.common import utils as common_utils
+from backend.divisions.crypto import enums as crypto_enums
 from backend.divisions.crypto.integrations.provider import base as base_provider_client
 from backend.divisions.crypto.integrations.provider import enums as provider_enums
 from backend.divisions.crypto.integrations.provider import (
@@ -12,7 +13,7 @@ from backend.divisions.crypto.integrations.provider import messages as provider_
 from divisions.crypto import models as crypto_models
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 class CryptoProviderImporter(object):
@@ -29,7 +30,7 @@ class CryptoProviderImporter(object):
         try:
             market_instruments = self._provider_client.get_market_instruments(
                 depth=100,
-                limit=500,
+                limit=50,
                 trading_category=trading_category,
                 market_instrument_symbol=market_instrument_symbol,
             )
@@ -115,6 +116,7 @@ class CryptoProviderImporter(object):
         self,
         trading_category: provider_enums.TradingCategory,
         market_instrument_symbol: str,
+        depth: int = 1,
         order_status: typing.Optional[provider_enums.TradeOrderStatus] = None,
         order_id: typing.Optional[str] = None,
         dry_run: bool = False,
@@ -125,10 +127,12 @@ class CryptoProviderImporter(object):
                 market_instrument_symbol=market_instrument_symbol,
                 order_id=order_id,
                 order_status=order_status,
+                depth=depth,
+                limit=50,
             )
         except provider_exceptions.ProviderError as e:
             msg = (
-                "Unable to import trade orders instruments (trading_category={},"
+                "Unable to import trade orders (trading_category={},"
                 " market_instrument_symbol={}). Error: {}".format(
                     trading_category.name,
                     market_instrument_symbol,
@@ -147,21 +151,73 @@ class CryptoProviderImporter(object):
             )
             return None
 
+        logger.info(
+            "{} Fetched {} trade orders to import.".format(
+                self.log_prefix, len(trade_orders)
+            )
+        )
+
         for trade_order in trade_orders:
             try:
                 self._import_trade_order(trade_order=trade_order, dry_run=dry_run)
             except Exception as e:
-                msg = "Unexpected exception occurred while importing trade order (market_instrument_symbol={}, trading_category={}). Error: {}".format(
+                msg = "Unexpected exception occurred while importing trade order (market_instrument_symbol={}, order_id={}). Error: {}".format(
                     trade_order.market_instrument_name,
-                    trading_category.name,
+                    trade_order.order_id,
                     common_utils.get_exception_message(exception=e),
                 )
                 logger.exception("{} {}. Continue.".format(self.log_prefix, msg))
 
     def _import_trade_order(
-        self, trade_order: crypto_models.TradeOrder, dry_run: bool
+        self, trade_order: provider_messages.TradeOrder, dry_run: bool
     ) -> None:
-        pass
+        if crypto_models.TradeOrder.objects.filter(
+            order_id=trade_order.order_id
+        ).exists():
+            logger.info(
+                "{} Trade order already exists (market_instrument_symbol={},"
+                " order_id={}). Exiting.".format(
+                    self.log_prefix,
+                    trade_order.market_instrument_name,
+                    trade_order.order_id,
+                )
+            )
+            return None
+
+        if dry_run:
+            logger.info(
+                "{} [DRY-RUN] Would create trade order (market_instrument_symbol={}, order_id={}). Exiting.".format(
+                    self.log_prefix,
+                    trade_order.market_instrument_name,
+                    trade_order.order_id,
+                )
+            )
+            return None
+
+        crypto_models.TradeOrder.objects.create(
+            instrument_name=trade_order.market_instrument_name,
+            order_id=trade_order.order_id,
+            order_side=trade_order.order_side,
+            order_quantity=trade_order.order_quantity,
+            order_price=trade_order.order_price,
+            average_order_price=trade_order.average_order_price,
+            order_type=trade_order.order_type,
+            order_status=trade_order.order_status,
+            order_total_executed_value=trade_order.order_total_executed_value,
+            order_total_executed_quantity=trade_order.order_total_executed_quantity,
+            order_total_executed_fee=trade_order.order_total_executed_fee,
+            created_at=trade_order.created_at,
+            updated_at=trade_order.updated_at,
+            provider=self._provider_client.provider.to_integer_choice(),
+        )
+
+        logger.info(
+            "{} Created trade order (market_instrument_symbol={}, order_id={}). Exiting.".format(
+                self.log_prefix,
+                trade_order.market_instrument_name,
+                trade_order.order_id,
+            )
+        )
 
     def import_trade_pnl_transactions(
         self,
@@ -182,8 +238,10 @@ class CryptoProviderImporter(object):
         if not (from_datetime and to_datetime):
             last_pnl_transaction = (
                 crypto_models.TradePnLTransaction.objects.filter(
-                    provider=self._provider_client.provider.to_integer_choice(),
-                    instrument_name=market_instrument_symbol,
+                    order__isnull=False,
+                    order__order_status=provider_enums.TradeOrderStatus.FILLED.value,
+                    order__provider=self._provider_client.provider.to_integer_choice(),
+                    order__instrument_name=market_instrument_symbol,
                 )
                 .order_by("created_at")
                 .last()
@@ -258,8 +316,7 @@ class CryptoProviderImporter(object):
         self, pnl_transaction: provider_messages.TradePnLPosition, dry_run: bool
     ) -> None:
         if crypto_models.TradePnLTransaction.objects.filter(
-            order_id=pnl_transaction.order_id,
-            provider=self._provider_client.provider.to_integer_choice(),
+            order__order_id=pnl_transaction.order_id,
         ).exists():
             logger.info(
                 "{} PnL transaction already exists (market_instrument_symbol={}, order_id={}). Exiting.".format(
@@ -278,13 +335,30 @@ class CryptoProviderImporter(object):
                     pnl_transaction.order_id,
                 )
             )
-        crypto_models.TradePnLTransaction.objects.create(
-            instrument_name=pnl_transaction.market_instrument_name,
+            return None
+
+        trade_order = crypto_models.TradeOrder.objects.filter(
             order_id=pnl_transaction.order_id,
-            position_side=pnl_transaction.position_side,
+            order_status__in=[
+                provider_enums.TradeOrderStatus.FILLED.value,
+                provider_enums.TradeOrderStatus.CANCELLED.value,
+            ],
+        ).first()
+
+        # TODO: ADD SENDING OF MANAGER MAIL
+        if not trade_order:
+            logger.error(
+                "{} No trade order found (market_instrument_symbol={}, order_id={}, order_status={}). Exiting.".format(
+                    self.log_prefix,
+                    pnl_transaction.market_instrument_name,
+                    pnl_transaction.order_id,
+                    provider_enums.TradeOrderStatus.FILLED.name,
+                )
+            )
+            return None
+
+        crypto_models.TradePnLTransaction.objects.create(
             position_quantity=pnl_transaction.position_quantity,
-            order_price=pnl_transaction.order_price,
-            order_type=pnl_transaction.order_type,
             position_closed_size=pnl_transaction.position_closed_size,
             total_entry_value=pnl_transaction.total_entry_value,
             average_entry_price=pnl_transaction.average_entry_price,
@@ -292,7 +366,7 @@ class CryptoProviderImporter(object):
             average_exit_price=pnl_transaction.average_exit_price,
             closed_pnl=pnl_transaction.closed_pnl,
             created_at=pnl_transaction.created_at,
-            provider=self._provider_client.provider.to_integer_choice(),
+            order=trade_order,
         )
 
         logger.info(
@@ -300,5 +374,159 @@ class CryptoProviderImporter(object):
                 self.log_prefix,
                 pnl_transaction.market_instrument_name,
                 pnl_transaction.order_id,
+            )
+        )
+
+    def import_trade_execution_transactions(
+        self,
+        trading_category: provider_enums.TradingCategory,
+        market_instrument_symbol: str,
+        depth: int = 1,
+        execution_type: typing.Optional[provider_enums.TradeExecutionType] = None,
+        order_id: typing.Optional[str] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
+        dry_run=False,
+    ) -> None:
+        if bool(from_datetime) != bool(to_datetime):
+            logger.info(
+                "{} Provider either both from_datetime and to_datetime or neither. Exiting.".format(
+                    self.log_prefix
+                )
+            )
+            return None
+
+        if not (from_datetime and to_datetime):
+            last_execution_transaction_qs = (
+                crypto_models.TradeExecutionTransaction.objects.filter(
+                    instrument_name=market_instrument_symbol,
+                    provider=self._provider_client.provider.to_integer_choice(),
+                )
+            )
+
+            if execution_type:
+                last_execution_transaction_qs = last_execution_transaction_qs.filter(
+                    execution_type=execution_type.value
+                )
+
+            last_execution_transaction = last_execution_transaction_qs.order_by(
+                "created_at"
+            ).last()
+
+            if not last_execution_transaction:
+                logger.info(
+                    "{} No execution transactions found in db (market_instrument_symbol={}, trading_category={}) Exiting.".format(
+                        self.log_prefix,
+                        market_instrument_symbol,
+                        trading_category.name,
+                    )
+                )
+                return None
+
+            from_datetime = last_execution_transaction.created_at
+        try:
+            execution_transactions = self._provider_client.get_trade_executions(
+                trading_category=trading_category,
+                market_instrument_symbol=market_instrument_symbol,
+                from_datetime=from_datetime,
+                to_datetime=to_datetime,
+                execution_type=execution_type,
+                order_id=order_id,
+                depth=depth,
+                limit=50,
+            )
+        except provider_exceptions.ProviderError as e:
+            msg = (
+                "Unable to import execution transactions ("
+                " market_instrument_symbol={}, trading_category={}). Error: {}".format(
+                    market_instrument_symbol,
+                    trading_category.name,
+                    common_utils.get_exception_message(exception=e),
+                )
+            )
+            logger.exception("{} {}.".format(self.log_prefix, msg))
+            # TODO: Send mail to managers
+            return None
+
+        if not execution_transactions:
+            logger.info(
+                "{} No execution transactions fetched (market_instrument_symbol={}, trading_category={}). Exiting.".format(
+                    self.log_prefix,
+                    market_instrument_symbol,
+                    trading_category.name,
+                )
+            )
+            return None
+
+        logger.info(
+            "{} Fetched {} execution transactions to import.".format(
+                self.log_prefix, len(execution_transactions)
+            )
+        )
+
+        for execution_transaction in execution_transactions:
+            try:
+                self._import_execution_transaction(
+                    execution_transaction=execution_transaction, dry_run=dry_run
+                )
+            except Exception as e:
+                msg = "Unexpected exception occurred while importing execution transactions" " (market_instrument_symbol={}, execution_id={}). Error: {}".format(
+                    execution_transaction.market_instrument_name,
+                    execution_transaction.execution_id,
+                    common_utils.get_exception_message(exception=e),
+                )
+                logger.exception("{} {}. Continue.".format(self.log_prefix, msg))
+                continue
+
+    def _import_execution_transaction(
+        self, execution_transaction: provider_messages.TradeExecution, dry_run: bool
+    ) -> None:
+
+        if crypto_models.TradeExecutionTransaction.objects.filter(
+            execution_id=execution_transaction.execution_id,
+        ).exists():
+            logger.info(
+                "{} Execution transaction already exists (market_instrument_symbol={}, execution_id={}). Exiting.".format(
+                    self.log_prefix,
+                    execution_transaction.market_instrument_name,
+                    execution_transaction.execution_id,
+                )
+            )
+            return None
+
+        if dry_run:
+            logger.info(
+                "{} [DRY-RUN] Would create execution transaction (market_instrument_symbol={}, execution_id={}). Exiting.".format(
+                    self.log_prefix,
+                    execution_transaction.market_instrument_name,
+                    execution_transaction.order_id,
+                )
+            )
+            return None
+
+        trade_order = crypto_models.TradeOrder.objects.filter(
+            order_id=execution_transaction.order_id,
+        ).first()
+
+        crypto_models.TradeExecutionTransaction.objects.create(
+            instrument_name=execution_transaction.market_instrument_name,
+            execution_id=execution_transaction.execution_id,
+            execution_side=execution_transaction.execution_side,
+            execution_type=execution_transaction.execution_type,
+            executed_fee=execution_transaction.executed_fee,
+            execution_price=execution_transaction.executed_fee,
+            execution_quantity=execution_transaction.execution_quantity,
+            execution_value=execution_transaction.execution_value,
+            is_maker=execution_transaction.is_maker,
+            provider=self._provider_client.provider.to_integer_choice(),
+            created_at=execution_transaction.created_at,
+            order=trade_order,
+        )
+
+        logger.info(
+            "{} Created execution transaction (market_instrument_symbol={}, execution_id={}).".format(
+                self.log_prefix,
+                execution_transaction.market_instrument_name,
+                execution_transaction.order_id,
             )
         )

@@ -62,11 +62,6 @@ class TradeOrder(models.Model):
 
 
 class TradePnLTransaction(models.Model):
-    # TODO: Instrument name can be FK to MarketInstrument
-    instrument_name = models.CharField(max_length=255, null=False)
-    position_quantity = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
-    )
     position_closed_size = models.DecimalField(
         decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
@@ -94,3 +89,32 @@ class TradePnLTransaction(models.Model):
     class Meta:
         app_label = "crypto"
         db_table = "crypto_tradepnltransaction"
+
+
+class TradeExecutionTransaction(models.Model):
+    instrument_name = models.CharField(max_length=255, null=False)
+    execution_id = models.CharField(max_length=255, null=False, unique=True)
+    execution_side = models.CharField(max_length=255)
+    execution_type = models.CharField(max_length=255)
+    executed_fee = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    execution_price = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    execution_quantity = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    execution_value = models.DecimalField(
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+    )
+    is_maker = models.BooleanField(default=False)
+    provider = models.PositiveSmallIntegerField()
+    created_at = models.DateTimeField()
+    order = models.ForeignKey(
+        TradeOrder, on_delete=models.CASCADE, related_name="execution_transaction", null=True
+    )
+
+    class Meta:
+        app_label = "crypto"
+        db_table = "crypto_tradeexecutiontransaction"

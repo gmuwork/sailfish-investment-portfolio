@@ -14,3 +14,11 @@ class TradeOrderStatus(enum.Enum):
     REJECTED = "Rejected"
     CANCELLED = "Cancelled"
     FILLED = "Filled"
+
+
+class TradeExecutionType(enum.Enum):
+    TRADE = "Trade"
+    FUNDING = "Funding"
+    ADL_TRADE = "AdlTrade"
+    BUST_TRADE = "BustTrade"
+    SETTLE = "Settle"

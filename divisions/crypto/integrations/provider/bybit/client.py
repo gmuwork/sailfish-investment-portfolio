@@ -241,3 +241,61 @@ class ByBitProvider(base.BaseProvider):
             )
             for trade_order in validated_data["trade_orders"]
         ]
+
+    def get_trade_executions(
+        self,
+        trading_category: enums.TradingCategory,
+        market_instrument_symbol: str,
+        depth: int = 1,
+        limit: int = 50,
+        execution_type: typing.Optional[enums.TradeExecutionType] = None,
+        order_id: typing.Optional[str] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
+    ) -> typing.List[messages.TradeExecution]:
+        try:
+            response = self.get_rest_api_client().get_trade_executions(
+                category=trading_category.value,
+                depth=depth,
+                limit=limit,
+                symbol=market_instrument_symbol,
+                order_id=order_id,
+                execution_type=execution_type.value if execution_type else None,
+                from_datetime=from_datetime,
+                to_datetime=to_datetime,
+            )
+        except rest_api_client_exceptions.ByBitClientError as e:
+            msg = "Unable to fetch trade executions from API (market_instrument_symbol={}, category={}). Error: {}".format(
+                market_instrument_symbol,
+                trading_category.name,
+                common_utils.get_exception_message(exception=e),
+            )
+            self.logger.exception("{} {}.".format(self.log_prefix, msg))
+            raise exceptions.APIClientError(msg)
+
+        validated_data = self._validate_marshmallow_schema(
+            data=response, schema=schemas.TradeExecutions()
+        )
+        if not validated_data:
+            raise exceptions.DataValidationError(
+                "Trade executions response data is not valid"
+            )
+
+        return [
+            messages.TradeExecution(
+                market_instrument_name=trade_execution["symbol"],
+                order_id=trade_execution["order_id"],
+                execution_id=trade_execution["execution_id"],
+                execution_side=trade_execution["side"],
+                executed_fee=trade_execution["executed_fee"],
+                execution_price=trade_execution["execution_price"],
+                execution_quantity=trade_execution["execution_quantity"],
+                execution_type=trade_execution["execution_type"],
+                execution_value=trade_execution["execution_value"],
+                is_maker=trade_execution["is_maker"],
+                created_at=datetime.datetime.fromtimestamp(
+                    trade_execution["created_at"]
+                ),
+            )
+            for trade_execution in validated_data["trade_executions"]
+        ]

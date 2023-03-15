@@ -75,6 +75,20 @@ class BaseProvider(object):
     ) -> typing.List[messages.TradeOrder]:
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def get_trade_executions(
+        self,
+        trading_category: enums.TradingCategory,
+        market_instrument_symbol: str,
+        depth: int = 1,
+        limit: int = 50,
+        execution_type: typing.Optional[enums.TradeExecutionType] = None,
+        order_id: typing.Optional[str] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
+    ) -> typing.List[messages.TradeExecution]:
+        raise NotImplementedError
+
     def _validate_marshmallow_schema(
         self,
         data: typing.Union[dict, typing.List[dict]],

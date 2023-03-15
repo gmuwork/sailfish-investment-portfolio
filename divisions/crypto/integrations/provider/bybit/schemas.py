@@ -66,7 +66,7 @@ class TradePnLPosition(schema.Schema):
     total_exit_value = fields.Decimal(required=True, data_key="cumExitValue")
     average_exit_value = fields.Decimal(required=True, data_key="avgExitPrice")
     closed_pnl = fields.Decimal(required=True, data_key="closedPnl")
-    created_at = fields.Integer(required=True, data_key="createdAt")
+    created_at = fields.Integer(required=True, data_key="createdTime")
 
     @post_load
     def prepare_data(self, data: dict, **kwargs: typing.Any) -> dict:
@@ -114,3 +114,34 @@ class TradeOrders(schema.Schema):
     @pre_load
     def prepare_data(self, data: typing.List[dict], **kwargs: typing.Any) -> dict:
         return {"trade_orders": data}
+
+
+class TradeExecution(schema.Schema):
+    class Meta:
+        unknown = EXCLUDE
+
+    symbol = fields.Str(required=True, data_key="symbol")
+    order_id = fields.Str(required=True, allow_none=True, data_key="orderId")
+    execution_id = fields.Str(required=True, data_key="execId")
+    side = fields.Str(required=True, allow_none=True, data_key="side")
+    executed_fee = fields.Decimal(required=True, data_key="execFee")
+    execution_price = fields.Decimal(required=True, data_key="execPrice")
+    execution_quantity = fields.Decimal(required=True, data_key="execQty")
+    execution_type = fields.Str(required=True, data_key="execType")
+    execution_value = fields.Decimal(required=True, data_key="execValue")
+    is_maker = fields.Bool(required=True, data_key="isMaker")
+    created_at = fields.Integer(required=True, data_key="execTime")
+
+    @post_load
+    def prepare_data(self, data: dict, **kwargs: typing.Any) -> dict:
+        data["created_at"] = data["created_at"] // 1000
+
+        return data
+
+
+class TradeExecutions(schema.Schema):
+    trade_executions = fields.Nested(TradeExecution, many=True)
+
+    @pre_load
+    def prepare_data(self, data: typing.List[dict], **kwargs: typing.Any) -> dict:
+        return {"trade_executions": data}

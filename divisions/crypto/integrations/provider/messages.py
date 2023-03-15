@@ -114,3 +114,27 @@ class TradeOrder(
 
 
 TradeOrder.__new__.__defaults__ = (None,) * len(TradeOrder._fields)
+
+
+class TradeExecution(
+    typing.NamedTuple(
+        "TradeExecution",
+        [
+            ("market_instrument_name", str),
+            ("order_id", typing.Optional[str]),
+            ("execution_id", str),
+            ("execution_side", str),
+            ("executed_fee", decimal.Decimal),
+            ("execution_price", decimal.Decimal),
+            ("execution_quantity", decimal.Decimal),
+            ("execution_type", str),
+            ("execution_value", decimal.Decimal),
+            ("is_maker", bool),
+            ("created_at", datetime.datetime),
+        ],
+    )
+):
+    __slots__ = ()
+
+
+TradeExecution.__new__.__defaults__ = (None,) * len(TradeExecution._fields)

@@ -93,17 +93,38 @@ class ByBitClient(object):
         )
 
     def get_trade_executions(
-        self, symbol: str, category: str, order_id: str, limit: int = 50, depth: int = 1
+        self,
+        category: str,
+        symbol: str,
+        limit: int = 50,
+        depth: int = 1,
+        execution_type: typing.Optional[str] = None,
+        order_id: typing.Optional[str] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
     ) -> typing.List[dict]:
+        params = {"limit": limit, "category": category, "symbol": symbol}
+
+        if order_id:
+            params["orderId"] = order_id
+
+        if execution_type:
+            params["execType"] = execution_type
+
+        if from_datetime:
+            params["startTime"] = common_utils.convert_timestamp_to_milliseconds(
+                timestamp=from_datetime.timestamp()
+            )
+
+        if to_datetime:
+            params["endTime"] = common_utils.convert_timestamp_to_milliseconds(
+                timestamp=to_datetime.timestamp()
+            )
+
         return self._get_paginated_response(
             endpoint="/v5/execution/list",
             method=common_enums.HttpMethod.GET,
-            params={
-                "symbol": symbol,
-                "category": category,
-                "limit": limit,
-                "orderId": order_id,
-            },
+            params=params,
             data_field="list",
             depth=depth,
         )
