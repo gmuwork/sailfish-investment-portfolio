@@ -3,7 +3,6 @@ import logging
 import typing
 
 from backend.divisions.common import utils as common_utils
-from backend.divisions.crypto import enums as crypto_enums
 from backend.divisions.crypto.integrations.provider import base as base_provider_client
 from backend.divisions.crypto.integrations.provider import enums as provider_enums
 from backend.divisions.crypto.integrations.provider import (
@@ -24,24 +23,21 @@ class CryptoProviderImporter(object):
     def import_market_instruments(
         self,
         trading_category: provider_enums.TradingCategory,
+        depth: int = 1,
         market_instrument_symbol: typing.Optional[str] = None,
         dry_run=False,
     ) -> None:
         try:
             market_instruments = self._provider_client.get_market_instruments(
-                depth=100,
+                depth=depth,
                 limit=50,
                 trading_category=trading_category,
                 market_instrument_symbol=market_instrument_symbol,
             )
         except provider_exceptions.ProviderError as e:
-            msg = (
-                "Unable to import market instruments (trading_category={},"
-                " market_instrument_symbol={}). Error: {}".format(
-                    trading_category.name if trading_category else None,
-                    market_instrument_symbol,
-                    common_utils.get_exception_message(exception=e),
-                )
+            msg = "Unable to fetch market instruments (trading_category={}). Error: {}".format(
+                trading_category.name,
+                common_utils.get_exception_message(exception=e),
             )
             logger.exception("{} {}.".format(self.log_prefix, msg))
             # TODO: Send mail to managers
@@ -49,10 +45,8 @@ class CryptoProviderImporter(object):
 
         if not market_instruments:
             logger.info(
-                "{} No market instruments fetched (trading_category={},"
-                " market_instrument_symbol={}). Exiting.".format(
+                "{} No market instruments to import (trading_category={}). Exiting.".format(
                     self.log_prefix,
-                    trading_category.name if trading_category else None,
                     market_instrument_symbol,
                 )
             )
@@ -88,7 +82,7 @@ class CryptoProviderImporter(object):
             provider=self._provider_client.provider.to_integer_choice(),
         ).exists():
             logger.info(
-                "{} Market instrument already exists (name={}). Exiting.".format(
+                "{} Market instrument already exists (market_instrument_symbol={}). Continue.".format(
                     self.log_prefix, market_instrument.name
                 )
             )
@@ -96,18 +90,19 @@ class CryptoProviderImporter(object):
 
         if dry_run:
             logger.info(
-                "{} [DRY-RUN] Would create market instrument (name={}). Exiting.".format(
+                "{} [DRY-RUN] Would create market instrument (market_instrument_symbol={}). Continue.".format(
                     self.log_prefix, market_instrument.name
                 )
             )
+            return None
+
         crypto_models.MarketInstrument.objects.create(
             name=market_instrument.name,
             status=market_instrument.status,
             provider=self._provider_client.provider.to_integer_choice(),
         )
-
         logger.info(
-            "{} Created market instrument (name={}).".format(
+            "{} Created market instrument (market_instrument_symbol={}).".format(
                 self.log_prefix, market_instrument.name
             )
         )
@@ -390,7 +385,7 @@ class CryptoProviderImporter(object):
     ) -> None:
         if bool(from_datetime) != bool(to_datetime):
             logger.info(
-                "{} Provider either both from_datetime and to_datetime or neither. Exiting.".format(
+                "{} Provide either both from_datetime and to_datetime or neither. Exiting.".format(
                     self.log_prefix
                 )
             )
@@ -470,7 +465,7 @@ class CryptoProviderImporter(object):
                     execution_transaction=execution_transaction, dry_run=dry_run
                 )
             except Exception as e:
-                msg = "Unexpected exception occurred while importing execution transactions" " (market_instrument_symbol={}, execution_id={}). Error: {}".format(
+                msg = "Unexpected exception occurred while importing execution transactions (market_instrument_symbol={}, execution_id={}). Error: {}".format(
                     execution_transaction.market_instrument_name,
                     execution_transaction.execution_id,
                     common_utils.get_exception_message(exception=e),

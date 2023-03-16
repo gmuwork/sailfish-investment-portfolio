@@ -2,5 +2,5 @@ class ByBitClientError(Exception):
     pass
 
 
-class BadResponseCodeErrpr(ByBitClientError):
+class BadResponseCodeError(ByBitClientError):
     pass

@@ -2,7 +2,6 @@ import datetime
 import decimal
 import time
 import typing
-import urllib.parse
 
 import requests
 import hashlib
@@ -25,24 +24,25 @@ class ByBitClient(object):
     API_BASE_URL = settings.BYBIT_API_URL
     API_KEY = settings.BYBIT_API_KEY
     API_SECRET_KEY = settings.BYBIT_API_SECRET_KEY
-    VALID_STATUS_CODES = [200, 201, 204]
+    VALID_STATUS_CODES = [200]
     REQUEST_EXPIRATION = 10000  # value in ms
 
     LOG_PREFIX = "[BYBIT-CLIENT]"
 
     def get_market_instruments(
         self,
-        category: str,
+        category: enums.TradingCategory,
         depth: int = 1,
         limit: int = 50,
         symbol: typing.Optional[str] = None,
     ) -> typing.List[dict]:
-        params = {"limit": limit, "category": category}
+        params = {"limit": limit, "category": category.value}
+
         if symbol:
             params["symbol"] = symbol
 
         return self._get_paginated_response(
-            endpoint="/derivatives/v3/public/instruments-info",
+            endpoint="/v5/market/instruments-info",
             method=common_enums.HttpMethod.GET,
             params=params,
             data_field="list",
@@ -51,15 +51,15 @@ class ByBitClient(object):
 
     def get_trade_orders(
         self,
-        category: str,
+        category: enums.TradingCategory,
         depth: int = 1,
         limit: int = 50,
         symbol: typing.Optional[str] = None,
         order_id: typing.Optional[str] = None,
-        order_status: typing.Optional[str] = None,
+        order_status: typing.Optional[enums.TradeOrderStatus] = None,
         order_filter: typing.Optional[str] = None,
     ) -> typing.List[dict]:
-        params = {"limit": limit, "category": category}
+        params = {"limit": limit, "category": category.value}
 
         if symbol:
             params["symbol"] = symbol
@@ -68,7 +68,7 @@ class ByBitClient(object):
             params["orderId"] = order_id
 
         if order_status:
-            params["orderStatus"] = order_status
+            params["orderStatus"] = order_status.value
 
         if order_filter:
             params["orderFilter"] = order_filter
@@ -82,34 +82,34 @@ class ByBitClient(object):
         )
 
     def get_trade_positions(
-        self, symbol: str, category: str, limit: int = 50, depth: int = 1
+        self, symbol: str, category: enums.TradingCategory, limit: int = 50, depth: int = 1
     ) -> typing.List[dict]:
         return self._get_paginated_response(
             endpoint="/v5/position/list",
             method=common_enums.HttpMethod.GET,
-            params={"symbol": symbol, "category": category, "limit": limit},
+            params={"symbol": symbol, "category": category.value, "limit": limit},
             data_field="list",
             depth=depth,
         )
 
     def get_trade_executions(
         self,
-        category: str,
+        category: enums.TradingCategory,
         symbol: str,
         limit: int = 50,
         depth: int = 1,
-        execution_type: typing.Optional[str] = None,
+        execution_type: typing.Optional[enums.TradeExecutionType] = None,
         order_id: typing.Optional[str] = None,
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
     ) -> typing.List[dict]:
-        params = {"limit": limit, "category": category, "symbol": symbol}
+        params = {"limit": limit, "category": category.value, "symbol": symbol}
 
         if order_id:
             params["orderId"] = order_id
 
         if execution_type:
-            params["execType"] = execution_type
+            params["execType"] = execution_type.value
 
         if from_datetime:
             params["startTime"] = common_utils.convert_timestamp_to_milliseconds(
@@ -131,14 +131,14 @@ class ByBitClient(object):
 
     def get_trade_positions_profit_and_loss(
         self,
-        category: str,
+        category: enums.TradingCategory,
         symbol: str,
         depth: int = 1,
         limit: int = 50,
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
     ) -> typing.List[dict]:
-        params = {"symbol": symbol, "limit": limit, "category": category}
+        params = {"symbol": symbol, "limit": limit, "category": category.value}
 
         if from_datetime:
             params["startTime"] = common_utils.convert_timestamp_to_milliseconds(
@@ -208,7 +208,10 @@ class ByBitClient(object):
         )
 
         # TODO: Later on map all codes and handle properly
-        if content.get("retCode") != 0 or "result" not in content:
+        if (
+            content.get("retCode") != enums.StatusCode.OK.value
+            or "result" not in content
+        ):
             msg = "Invalid response content (response_data={})".format(
                 response.content.decode(encoding="utf-8")
             )
@@ -254,10 +257,11 @@ class ByBitClient(object):
         payload: typing.Optional[dict] = None,
     ) -> requests.Response:
         url = url_parser.urljoin(base=self.API_BASE_URL, url=endpoint)
+        signature_payload = self._construct_signature_payload(
+            params=params, payload=payload, method=method
+        )
         headers = self._get_request_headers(
-            signature_payload=self._construct_signature_payload(
-                params=params, payload=payload, method=method
-            )
+            signature_payload=signature_payload if signature_payload else ""
         )
 
         try:
@@ -269,14 +273,13 @@ class ByBitClient(object):
                 headers=headers,
             )
 
-            # ADD SECRET KEY OBFUSCATION
             if response.status_code not in self.VALID_STATUS_CODES:
                 msg = "Invalid API client response (status_code={}, data={})".format(
                     response.status_code,
                     response.content.decode(encoding="utf-8"),
                 )
                 logger.error("{} {}.".format(self.LOG_PREFIX, msg))
-                raise exceptions.BadResponseCodeErrpr(msg)
+                raise exceptions.BadResponseCodeError(msg)
         except requests.exceptions.ConnectTimeout as e:
             msg = "Connect timeout. Error: {}".format(
                 common_utils.get_exception_message(exception=e)
@@ -292,23 +295,23 @@ class ByBitClient(object):
 
         return response
 
+    @staticmethod
     def _construct_signature_payload(
-        self,
         params: typing.Optional[dict],
         payload: typing.Optional[dict],
         method: common_enums.HttpMethod,
-    ) -> str:
+    ) -> typing.Optional[str]:
         payload = params if method == common_enums.HttpMethod.GET else payload
         if not payload:
-            return ""
+            return None
 
         if method == common_enums.HttpMethod.POST:
             return simplejson.dumps(payload)
 
         if method == common_enums.HttpMethod.GET:
-            return urllib.parse.urlencode(payload)
+            return url_parser.urlencode(payload)
 
-        return ""
+        return None
 
     def _get_request_headers(self, signature_payload: str) -> dict:
         request_timestamp = str(

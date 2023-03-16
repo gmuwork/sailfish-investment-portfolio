@@ -6,16 +6,19 @@ from marshmallow import post_load
 from marshmallow import EXCLUDE
 from marshmallow import schema
 
+
 # TODO: Create common_schema
-class MarketInstrument(schema.Schema):
+class Schema(schema.Schema):
     class Meta:
         unknown = EXCLUDE
 
+
+class MarketInstrument(Schema):
     symbol = fields.Str(required=True, data_key="symbol")
     status = fields.Str(required=True, data_key="status")
 
 
-class MarketInstruments(schema.Schema):
+class MarketInstruments(Schema):
     market_instruments = fields.Nested(MarketInstrument, many=True)
 
     @pre_load
@@ -23,10 +26,7 @@ class MarketInstruments(schema.Schema):
         return {"market_instruments": data}
 
 
-class TradePosition(schema.Schema):
-    class Meta:
-        unknown = EXCLUDE
-
+class TradePosition(Schema):
     symbol = fields.Str(required=True, data_key="symbol")
     side = fields.Str(required=True, allow_none=True, data_key="side")
     size = fields.Decimal(required=True, data_key="size")
@@ -42,7 +42,7 @@ class TradePosition(schema.Schema):
         return data
 
 
-class TradePositions(schema.Schema):
+class TradePositions(Schema):
     trade_positions = fields.Nested(TradePosition, many=True)
 
     @pre_load
@@ -50,10 +50,7 @@ class TradePositions(schema.Schema):
         return {"trade_positions": data}
 
 
-class TradePnLPosition(schema.Schema):
-    class Meta:
-        unknown = EXCLUDE
-
+class TradePnLPosition(Schema):
     symbol = fields.Str(required=True, data_key="symbol")
     order_id = fields.Str(required=True, data_key="orderId")
     side = fields.Str(required=True, allow_none=True, data_key="side")
@@ -74,7 +71,7 @@ class TradePnLPosition(schema.Schema):
         return data
 
 
-class TradePnLPositions(schema.Schema):
+class TradePnLPositions(Schema):
     trade_pnl_positions = fields.Nested(TradePnLPosition, many=True)
 
     @pre_load
@@ -82,10 +79,7 @@ class TradePnLPositions(schema.Schema):
         return {"trade_pnl_positions": data}
 
 
-class TradeOrder(schema.Schema):
-    class Meta:
-        unknown = EXCLUDE
-
+class TradeOrder(Schema):
     symbol = fields.Str(required=True, data_key="symbol")
     order_id = fields.Str(required=True, data_key="orderId")
     side = fields.Str(required=True, allow_none=True, data_key="side")
@@ -108,7 +102,7 @@ class TradeOrder(schema.Schema):
         return data
 
 
-class TradeOrders(schema.Schema):
+class TradeOrders(Schema):
     trade_orders = fields.Nested(TradeOrder, many=True)
 
     @pre_load
@@ -116,10 +110,7 @@ class TradeOrders(schema.Schema):
         return {"trade_orders": data}
 
 
-class TradeExecution(schema.Schema):
-    class Meta:
-        unknown = EXCLUDE
-
+class TradeExecution(Schema):
     symbol = fields.Str(required=True, data_key="symbol")
     order_id = fields.Str(required=True, allow_none=True, data_key="orderId")
     execution_id = fields.Str(required=True, data_key="execId")
@@ -139,7 +130,7 @@ class TradeExecution(schema.Schema):
         return data
 
 
-class TradeExecutions(schema.Schema):
+class TradeExecutions(Schema):
     trade_executions = fields.Nested(TradeExecution, many=True)
 
     @pre_load

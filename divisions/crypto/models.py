@@ -2,8 +2,9 @@ import decimal
 
 from django.db import models
 
+from backend.divisions.common import constants as common_constants
 
-# Create your models here.
+
 class MarketInstrument(models.Model):
     name = models.CharField(max_length=255, null=False)
     status = models.CharField(max_length=255, null=False)
@@ -23,34 +24,34 @@ class TradeOrder(models.Model):
     order_quantity = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=decimal.Decimal("0"),
+        default=common_constants.ZERO,
     )
     order_price = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=decimal.Decimal("0"),
+        default=common_constants.ZERO,
     )
     average_order_price = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=decimal.Decimal("0"),
+        default=common_constants.ZERO,
     )
     order_type = models.CharField(max_length=255, null=True)
     order_status = models.CharField(max_length=255, null=True)
     order_total_executed_value = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=decimal.Decimal("0"),
+        default=common_constants.ZERO,
     )
     order_total_executed_quantity = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=decimal.Decimal("0"),
+        default=common_constants.ZERO,
     )
     order_total_executed_fee = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=decimal.Decimal("0"),
+        default=common_constants.ZERO,
     )
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
@@ -63,22 +64,22 @@ class TradeOrder(models.Model):
 
 class TradePnLTransaction(models.Model):
     position_closed_size = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
     )
     total_entry_value = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
     )
     average_entry_price = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
     )
     total_exit_value = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
     )
     average_exit_price = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
     )
     closed_pnl = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
     )
     created_at = models.DateTimeField()
 
@@ -97,22 +98,25 @@ class TradeExecutionTransaction(models.Model):
     execution_side = models.CharField(max_length=255)
     execution_type = models.CharField(max_length=255)
     executed_fee = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
     )
     execution_price = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
     )
     execution_quantity = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
     )
     execution_value = models.DecimalField(
-        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
     )
     is_maker = models.BooleanField(default=False)
     provider = models.PositiveSmallIntegerField()
     created_at = models.DateTimeField()
     order = models.ForeignKey(
-        TradeOrder, on_delete=models.CASCADE, related_name="execution_transaction", null=True
+        TradeOrder,
+        on_delete=models.CASCADE,
+        related_name="execution_transaction",
+        null=True,
     )
 
     class Meta:

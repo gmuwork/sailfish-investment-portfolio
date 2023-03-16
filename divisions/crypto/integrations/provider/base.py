@@ -12,8 +12,9 @@ from backend.divisions.crypto.integrations.provider import messages
 
 
 class BaseProvider(object):
+    logger = logging.getLogger(__name__)
+
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
         self.log_prefix = "[{}-PROVIDER]".format(self.provider.name)
 
     @property

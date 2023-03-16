@@ -1,5 +1,4 @@
 import datetime
-import logging
 import typing
 
 from backend.divisions.blockchain.integrations.clients.bybit import (
@@ -50,13 +49,16 @@ class ByBitProvider(base.BaseProvider):
                 depth=depth,
                 limit=limit,
                 symbol=market_instrument_symbol,
-                category=trading_category.value,
+                category=trading_category.convert_to_internal(provider=self.provider),
             )
         except rest_api_client_exceptions.ByBitClientError as e:
-            msg = "Unable to fetch market instruments from API (market_instrument_symbol={}, trading_category={}). Error: {}".format(
-                market_instrument_symbol,
-                trading_category.name,
-                common_utils.get_exception_message(exception=e),
+            msg = (
+                "Unable to fetch market instruments from API"
+                " (market_instrument_symbol={}, trading_category={}). Error: {}".format(
+                    market_instrument_symbol,
+                    trading_category.name,
+                    common_utils.get_exception_message(exception=e),
+                )
             )
             self.logger.exception("{} {}.".format(self.log_prefix, msg))
             raise exceptions.APIClientError(msg)
@@ -87,7 +89,7 @@ class ByBitProvider(base.BaseProvider):
             response = self.get_rest_api_client().get_trade_positions(
                 depth=depth,
                 symbol=market_instrument_symbol,
-                category=trading_category.value,
+                category=trading_category.convert_to_internal(provider=self.provider),
             )
         except rest_api_client_exceptions.ByBitClientError as e:
             msg = "Unable to fetch trade positions from API (market_instrument_symbol={}, category={}). Error: {}".format(
@@ -139,7 +141,7 @@ class ByBitProvider(base.BaseProvider):
 
         try:
             response = self.get_rest_api_client().get_trade_positions_profit_and_loss(
-                category=trading_category.value,
+                category=trading_category.convert_to_internal(provider=self.provider),
                 depth=depth,
                 limit=limit,
                 symbol=market_instrument_symbol,
@@ -198,12 +200,14 @@ class ByBitProvider(base.BaseProvider):
     ) -> typing.List[messages.TradeOrder]:
         try:
             response = self.get_rest_api_client().get_trade_orders(
-                category=trading_category.value,
+                category=trading_category.convert_to_internal(provider=self.provider),
                 depth=depth,
                 limit=limit,
                 symbol=market_instrument_symbol,
                 order_id=order_id,
-                order_status=order_status.value if order_status else None,
+                order_status=order_status.convert_to_internal(provider=self.provider)
+                if order_status
+                else None,
                 order_filter=order_filter,
             )
         except rest_api_client_exceptions.ByBitClientError as e:
@@ -255,12 +259,16 @@ class ByBitProvider(base.BaseProvider):
     ) -> typing.List[messages.TradeExecution]:
         try:
             response = self.get_rest_api_client().get_trade_executions(
-                category=trading_category.value,
+                category=trading_category.convert_to_internal(provider=self.provider),
                 depth=depth,
                 limit=limit,
                 symbol=market_instrument_symbol,
                 order_id=order_id,
-                execution_type=execution_type.value if execution_type else None,
+                execution_type=execution_type.convert_to_internal(
+                    provider=self.provider
+                )
+                if execution_type
+                else None,
                 from_datetime=from_datetime,
                 to_datetime=to_datetime,
             )
