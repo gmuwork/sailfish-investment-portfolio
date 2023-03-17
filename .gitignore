@@ -132,3 +132,5 @@ dmypy.json
 
 settings.py
 settings_base.py
+
+logs

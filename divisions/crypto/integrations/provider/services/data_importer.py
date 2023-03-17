@@ -335,25 +335,31 @@ class CryptoProviderImporter(object):
         trade_order = crypto_models.TradeOrder.objects.filter(
             order_id=pnl_transaction.order_id,
             order_status__in=[
-                provider_enums.TradeOrderStatus.FILLED.value,
-                provider_enums.TradeOrderStatus.CANCELLED.value,
+                provider_enums.TradeOrderStatus.FILLED.convert_to_internal(
+                    provider=self._provider_client.provider
+                ).value,
+                provider_enums.TradeOrderStatus.CANCELLED.convert_to_internal(
+                    provider=self._provider_client.provider
+                ).value,
             ],
         ).first()
 
         # TODO: ADD SENDING OF MANAGER MAIL
         if not trade_order:
             logger.error(
-                "{} No trade order found (market_instrument_symbol={}, order_id={}, order_status={}). Exiting.".format(
+                "{} No trade order found (market_instrument_symbol={}, order_id={}, order_statuses={}). Exiting.".format(
                     self.log_prefix,
                     pnl_transaction.market_instrument_name,
                     pnl_transaction.order_id,
-                    provider_enums.TradeOrderStatus.FILLED.name,
+                    [
+                        provider_enums.TradeOrderStatus.FILLED.name,
+                        provider_enums.TradeOrderStatus.CANCELLED.name,
+                    ],
                 )
             )
             return None
 
         crypto_models.TradePnLTransaction.objects.create(
-            position_quantity=pnl_transaction.position_quantity,
             position_closed_size=pnl_transaction.position_closed_size,
             total_entry_value=pnl_transaction.total_entry_value,
             average_entry_price=pnl_transaction.average_entry_price,

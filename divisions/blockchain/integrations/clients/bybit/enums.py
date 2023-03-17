@@ -36,3 +36,12 @@ class TradeExecutionType(enum.Enum):
 
 class StatusCode(enum.Enum):
     OK = 0
+
+
+class AccountType(enum.Enum):
+    CONTRACT = "CONTRACT"
+    SPOT = "SPOT"
+    INVESTMENT = "INVESTMENT"
+    OPTION = "OPTION"
+    UNIFIED = "UNIFIED"
+    FUND = "FUND"

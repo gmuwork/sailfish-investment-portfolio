@@ -25,7 +25,7 @@ class ByBitClient(object):
     API_KEY = settings.BYBIT_API_KEY
     API_SECRET_KEY = settings.BYBIT_API_SECRET_KEY
     VALID_STATUS_CODES = [200]
-    REQUEST_EXPIRATION = 10000  # value in ms
+    REQUEST_EXPIRATION = 5000  # value in ms
 
     LOG_PREFIX = "[BYBIT-CLIENT]"
 
@@ -82,7 +82,11 @@ class ByBitClient(object):
         )
 
     def get_trade_positions(
-        self, symbol: str, category: enums.TradingCategory, limit: int = 50, depth: int = 1
+        self,
+        symbol: str,
+        category: enums.TradingCategory,
+        limit: int = 50,
+        depth: int = 1,
     ) -> typing.List[dict]:
         return self._get_paginated_response(
             endpoint="/v5/position/list",
@@ -248,6 +252,24 @@ class ByBitClient(object):
             params["cursor"] = response["nextPageCursor"]
 
         return data
+
+    def get_wallet_balances(
+        self,
+        account_type: enums.AccountType,
+        currency: typing.Optional[str] = None,
+    ) -> dict:
+        params = {"accountType": account_type.value}
+
+        if currency:
+            params["coin"] = currency
+
+        return self._get_response_content(
+            response=self._request(
+                endpoint="/asset/v3/private/transfer/account-coins/balance/query",
+                method=common_enums.HttpMethod.GET,
+                params=params,
+            )
+        )
 
     def _request(
         self,

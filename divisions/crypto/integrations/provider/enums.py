@@ -11,7 +11,7 @@ class TradingCategory(enum.Enum):
     LINEAR = "linear"
     INVERSE = "inverse"
 
-    def convert_to_internal(self, provider: crypto_enums.CryptoProvider) -> typing.Self:
+    def convert_to_internal(self, provider: crypto_enums.CryptoProvider) -> 'TradingCategory':
         return {
             crypto_enums.CryptoProvider.BYBIT: {
                 self.SPOT: bybit_enums.TradingCategory.SPOT,
@@ -28,7 +28,7 @@ class TradeOrderStatus(enum.Enum):
     CANCELLED = "cancelled"
     FILLED = "filled"
 
-    def convert_to_internal(self, provider: crypto_enums.CryptoProvider) -> typing.Self:
+    def convert_to_internal(self, provider: crypto_enums.CryptoProvider) -> 'TradeOrderStatus':
         return {
             crypto_enums.CryptoProvider.BYBIT: {
                 self.CREATED: bybit_enums.TradeOrderStatus.CREATED,
@@ -46,7 +46,7 @@ class TradeExecutionType(enum.Enum):
     BUST_TRADE = "bust_trade"
     SETTLE = "settle"
 
-    def convert_to_internal(self, provider: crypto_enums.CryptoProvider) -> typing.Self:
+    def convert_to_internal(self, provider: crypto_enums.CryptoProvider) -> 'TradeExecutionType':
         return {
             crypto_enums.CryptoProvider.BYBIT: {
                 self.TRADE: bybit_enums.TradeExecutionType.TRADE,

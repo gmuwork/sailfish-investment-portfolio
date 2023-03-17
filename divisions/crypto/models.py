@@ -122,3 +122,64 @@ class TradeExecutionTransaction(models.Model):
     class Meta:
         app_label = "crypto"
         db_table = "crypto_tradeexecutiontransaction"
+
+
+class AccountProfile(models.Model):
+    provider = models.PositiveSmallIntegerField()
+    name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255, unique=True)
+    type = models.CharField(max_length=255)
+    status = models.CharField(max_length=255)
+    datetime = models.DateTimeField()
+    created_at = models.DateTimeField()
+
+    class Meta:
+        app_label = "crypto"
+        db_table = "crypto_accountinvestor"
+
+
+class AccountTransfer(models.Model):
+    provider = models.PositiveSmallIntegerField()
+    transaction_currency = models.CharField(max_length=255)
+    chain_currency = models.CharField(max_length=255)
+    type = models.CharField(max_length=255)
+    status = models.CharField(max_length=255)
+    txid = models.CharField(max_length=255, null=True)
+    address = models.CharField(max_length=255, null=True)
+    amount = models.DecimalField(
+        decimal_places=8, max_digits=21, default=common_constants.ZERO
+    )
+    fee = models.DecimalField(
+        decimal_places=8,
+        max_digits=21,
+        null=True,
+    )
+    created_at = models.DateTimeField()
+    investor = models.ForeignKey(
+        AccountProfile,
+        on_delete=models.PROTECT,
+        related_name="account_transfer",
+        null=True,
+    )
+    note = models.CharField(max_length=255)
+
+    class Meta:
+        app_label = "crypto"
+        db_table = "crypto_accounttransfer"
+
+
+class PortfolioWalletBalanceSnapshot(models.Model):
+    provider = models.PositiveSmallIntegerField()
+    type = models.CharField(max_length=255)
+    currency = models.CharField(max_length=255)
+    amount = models.DecimalField(
+        decimal_places=8,
+        max_digits=21,
+        null=True,
+    )
+    created_at = models.DateTimeField()
+
+    class Meta:
+        app_label = "crypto"
+        db_table = "crypto_portfoliowalletbalance"
