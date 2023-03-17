@@ -1,8 +1,5 @@
 import decimal
-
 from django.db import models
-
-from backend.divisions.common import constants as common_constants
 
 
 class MarketInstrument(models.Model):
@@ -24,34 +21,34 @@ class TradeOrder(models.Model):
     order_quantity = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=common_constants.ZERO,
+        default=decimal.Decimal("0"),
     )
     order_price = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=common_constants.ZERO,
+        default=decimal.Decimal("0"),
     )
     average_order_price = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=common_constants.ZERO,
+        default=decimal.Decimal("0"),
     )
     order_type = models.CharField(max_length=255, null=True)
     order_status = models.CharField(max_length=255, null=True)
     order_total_executed_value = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=common_constants.ZERO,
+        default=decimal.Decimal("0"),
     )
     order_total_executed_quantity = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=common_constants.ZERO,
+        default=decimal.Decimal("0"),
     )
     order_total_executed_fee = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=common_constants.ZERO,
+        default=decimal.Decimal("0"),
     )
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
@@ -64,22 +61,22 @@ class TradeOrder(models.Model):
 
 class TradePnLTransaction(models.Model):
     position_closed_size = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     total_entry_value = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     average_entry_price = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     total_exit_value = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     average_exit_price = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     closed_pnl = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     created_at = models.DateTimeField()
 
@@ -98,16 +95,16 @@ class TradeExecutionTransaction(models.Model):
     execution_side = models.CharField(max_length=255)
     execution_type = models.CharField(max_length=255)
     executed_fee = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     execution_price = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     execution_quantity = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     execution_value = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     is_maker = models.BooleanField(default=False)
     provider = models.PositiveSmallIntegerField()
@@ -124,7 +121,7 @@ class TradeExecutionTransaction(models.Model):
         db_table = "crypto_tradeexecutiontransaction"
 
 
-class AccountProfile(models.Model):
+class PortfolioAccountProfile(models.Model):
     provider = models.PositiveSmallIntegerField()
     name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
@@ -136,10 +133,10 @@ class AccountProfile(models.Model):
 
     class Meta:
         app_label = "crypto"
-        db_table = "crypto_accountinvestor"
+        db_table = "crypto_portfolioaccountprofile"
 
 
-class AccountTransfer(models.Model):
+class PortfolioTransfer(models.Model):
     provider = models.PositiveSmallIntegerField()
     transaction_currency = models.CharField(max_length=255)
     chain_currency = models.CharField(max_length=255)
@@ -148,7 +145,7 @@ class AccountTransfer(models.Model):
     txid = models.CharField(max_length=255, null=True)
     address = models.CharField(max_length=255, null=True)
     amount = models.DecimalField(
-        decimal_places=8, max_digits=21, default=common_constants.ZERO
+        decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
     fee = models.DecimalField(
         decimal_places=8,
@@ -156,8 +153,8 @@ class AccountTransfer(models.Model):
         null=True,
     )
     created_at = models.DateTimeField()
-    investor = models.ForeignKey(
-        AccountProfile,
+    portfolio_user = models.ForeignKey(
+        PortfolioAccountProfile,
         on_delete=models.PROTECT,
         related_name="account_transfer",
         null=True,
@@ -166,7 +163,7 @@ class AccountTransfer(models.Model):
 
     class Meta:
         app_label = "crypto"
-        db_table = "crypto_accounttransfer"
+        db_table = "crypto_portfoliotransfer"
 
 
 class PortfolioWalletBalanceSnapshot(models.Model):
@@ -176,7 +173,7 @@ class PortfolioWalletBalanceSnapshot(models.Model):
     amount = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        null=True,
+        default=decimal.Decimal('0'),
     )
     created_at = models.DateTimeField()
 

@@ -218,6 +218,7 @@ class CryptoProviderImporter(object):
         self,
         trading_category: provider_enums.TradingCategory,
         market_instrument_symbol: str,
+        depth: int = 1,
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
         dry_run=False,
@@ -260,7 +261,7 @@ class CryptoProviderImporter(object):
                     market_instrument_symbol=market_instrument_symbol,
                     from_datetime=from_datetime,
                     to_datetime=to_datetime,
-                    depth=1000,
+                    depth=depth,
                     limit=50,
                 )
             )
@@ -529,5 +530,88 @@ class CryptoProviderImporter(object):
                 self.log_prefix,
                 execution_transaction.market_instrument_name,
                 execution_transaction.order_id,
+            )
+        )
+
+    def import_wallet_balances(
+        self,
+        wallet_type: provider_enums.WalletType,
+        currency: typing.Optional[str] = None,
+    ) -> None:
+        try:
+            wallet_balances = self._provider_client.get_wallet_balances(
+                wallet_type=wallet_type,
+                currency=currency,
+            )
+        except provider_exceptions.ProviderError as e:
+            msg = "Unable to import wallet balances (wallet_type={}, currency={}). Error: {}".format(
+                wallet_type.name,
+                currency,
+                common_utils.get_exception_message(exception=e),
+            )
+            logger.exception("{} {}.".format(self.log_prefix, msg))
+            # TODO: Send mail to managers
+            return None
+
+        if not wallet_balances:
+            logger.info(
+                "{} No wallet balances fetched (wallet_type={}, currency={}). Exiting.".format(
+                    self.log_prefix,
+                    wallet_type.name,
+                    currency,
+                )
+            )
+            return None
+
+        logger.info(
+            "{} Fetched wallet balances for {} currencies to import.".format(
+                self.log_prefix, len(wallet_balances)
+            )
+        )
+
+        for wallet_balance in wallet_balances:
+            try:
+                self._import_wallet_balance(
+                    wallet_balance=wallet_balance,
+                    wallet_type=wallet_type,
+                )
+            except Exception as e:
+                msg = "Unexpected exception occurred while importing wallet balances (wallet_type={}, currency={}). Error: {}".format(
+                    wallet_type.name,
+                    currency,
+                    common_utils.get_exception_message(exception=e),
+                )
+                logger.exception("{} {}. Continue.".format(self.log_prefix, msg))
+                continue
+
+    def _import_wallet_balance(
+        self,
+        wallet_balance: provider_messages.WalletBalance,
+        wallet_type: provider_enums.WalletType,
+    ) -> None:
+
+        if crypto_models.PortfolioWalletBalanceSnapshot.objects.filter(
+            provider=self._provider_client.provider.to_integer_choice(),
+            type=wallet_type.name,
+            currency=wallet_balance.currency_name,
+        ).exists():
+            logger.info(
+                "{} Wallet balance snapshot exists (currency={}, wallet_type={}). Exiting.".format(
+                    self.log_prefix, wallet_balance.currency_name, wallet_type.name
+                )
+            )
+            return None
+
+        crypto_models.PortfolioWalletBalanceSnapshot.objects.create(
+            provider=self._provider_client.provider.to_integer_choice(),
+            type=wallet_type.name,
+            currency=wallet_balance.currency_name,
+            amount=wallet_balance.amount,
+            created_at=datetime.datetime.now(),
+        )
+
+        logger.info(
+            "{} Created wallet balance snapshot (currency={}, wallet_type={}).".format(
+                self.log_prefix, wallet_balance.currency_name, wallet_type.name
             )
         )

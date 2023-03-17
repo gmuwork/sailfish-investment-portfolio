@@ -136,3 +136,16 @@ class TradeExecutions(Schema):
     @pre_load
     def prepare_data(self, data: typing.List[dict], **kwargs: typing.Any) -> dict:
         return {"trade_executions": data}
+
+
+class WalletBalance(Schema):
+    currency = fields.Str(required=True, data_key="coin")
+    amount = fields.Decimal(required=True, data_key="walletBalance")
+
+
+class WalletBalances(Schema):
+    wallet_balances = fields.Nested(WalletBalance, many=True)
+
+    @pre_load
+    def prepare_data(self, data: typing.List[dict], **kwargs: typing.Any) -> dict:
+        return {"wallet_balances": data["balance"]}

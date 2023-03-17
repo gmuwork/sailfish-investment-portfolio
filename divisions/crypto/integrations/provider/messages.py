@@ -138,3 +138,18 @@ class TradeExecution(
 
 
 TradeExecution.__new__.__defaults__ = (None,) * len(TradeExecution._fields)
+
+
+class WalletBalance(
+    typing.NamedTuple(
+        "WalletBalance",
+        [
+            ("currency_name", str),
+            ("amount", decimal.Decimal),
+        ],
+    )
+):
+    __slots__ = ()
+
+
+WalletBalance.__new__.__defaults__ = (None,) * len(WalletBalance._fields)

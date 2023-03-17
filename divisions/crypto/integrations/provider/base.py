@@ -90,6 +90,11 @@ class BaseProvider(object):
     ) -> typing.List[messages.TradeExecution]:
         raise NotImplementedError
 
+    def get_wallet_balances(
+        self, wallet_type: enums.WalletType, currency: typing.Optional[str]
+    ) -> typing.List[messages.WalletBalance]:
+        pass
+
     def _validate_marshmallow_schema(
         self,
         data: typing.Union[dict, typing.List[dict]],

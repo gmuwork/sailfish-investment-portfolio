@@ -1,5 +1,4 @@
 import enum
-import typing
 
 from backend.divisions.blockchain.integrations.clients.bybit import enums as bybit_enums
 from backend.divisions.crypto import enums as crypto_enums
@@ -11,7 +10,9 @@ class TradingCategory(enum.Enum):
     LINEAR = "linear"
     INVERSE = "inverse"
 
-    def convert_to_internal(self, provider: crypto_enums.CryptoProvider) -> 'TradingCategory':
+    def convert_to_internal(
+        self, provider: crypto_enums.CryptoProvider
+    ) -> bybit_enums.TradingCategory:
         return {
             crypto_enums.CryptoProvider.BYBIT: {
                 self.SPOT: bybit_enums.TradingCategory.SPOT,
@@ -28,7 +29,9 @@ class TradeOrderStatus(enum.Enum):
     CANCELLED = "cancelled"
     FILLED = "filled"
 
-    def convert_to_internal(self, provider: crypto_enums.CryptoProvider) -> 'TradeOrderStatus':
+    def convert_to_internal(
+        self, provider: crypto_enums.CryptoProvider
+    ) -> bybit_enums.TradeOrderStatus:
         return {
             crypto_enums.CryptoProvider.BYBIT: {
                 self.CREATED: bybit_enums.TradeOrderStatus.CREATED,
@@ -46,7 +49,9 @@ class TradeExecutionType(enum.Enum):
     BUST_TRADE = "bust_trade"
     SETTLE = "settle"
 
-    def convert_to_internal(self, provider: crypto_enums.CryptoProvider) -> 'TradeExecutionType':
+    def convert_to_internal(
+        self, provider: crypto_enums.CryptoProvider
+    ) -> bybit_enums.TradeExecutionType:
         return {
             crypto_enums.CryptoProvider.BYBIT: {
                 self.TRADE: bybit_enums.TradeExecutionType.TRADE,
@@ -54,5 +59,18 @@ class TradeExecutionType(enum.Enum):
                 self.ADL_TRADE: bybit_enums.TradeExecutionType.ADL_TRADE,
                 self.BUST_TRADE: bybit_enums.TradeExecutionType.BUST_TRADE,
                 self.SETTLE: bybit_enums.TradeExecutionType.SETTLE,
+            }
+        }[provider][self]
+
+
+class WalletType(enum.Enum):
+    DERIVATIVE = "derivative"
+
+    def convert_to_internal(
+        self, provider: crypto_enums.CryptoProvider
+    ) -> bybit_enums.AccountType:
+        return {
+            crypto_enums.CryptoProvider.BYBIT: {
+                self.DERIVATIVE: bybit_enums.AccountType.CONTRACT,
             }
         }[provider][self]

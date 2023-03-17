@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve()
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -120,19 +120,19 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        # 'file': {
-        #     'level': 'INFO',
-        #     'class': 'logging.FileHandler',
-        #     'filename': 'logs/sailfish.log',
-        # },
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
         },
+        'log_file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs/sailfish.log',
+        },
     },
     'loggers': {
-        'django': {
-            'handlers': ['console'],
+        '': {
+            'handlers': ['console', 'log_file'],
             'level': 'INFO',
             'propagate': True,
         },

@@ -1,4 +1,5 @@
 import datetime
+import decimal
 import typing
 
 from backend.divisions.blockchain.integrations.clients.bybit import (
@@ -306,4 +307,39 @@ class ByBitProvider(base.BaseProvider):
                 ),
             )
             for trade_execution in validated_data["trade_executions"]
+        ]
+
+    def get_wallet_balances(
+        self,
+        wallet_type: enums.WalletType,
+        currency: typing.Optional[str] = None,
+    ) -> typing.List[messages.WalletBalance]:
+        try:
+            response = self.get_rest_api_client().get_wallet_balances(
+                account_type=wallet_type.convert_to_internal(provider=self.provider),
+                currency=currency,
+            )
+        except rest_api_client_exceptions.ByBitClientError as e:
+            msg = "Unable to fetch wallet balances from API (wallet_type={}, currency={}). Error: {}".format(
+                wallet_type.name,
+                currency,
+                common_utils.get_exception_message(exception=e),
+            )
+            self.logger.exception("{} {}.".format(self.log_prefix, msg))
+            raise exceptions.APIClientError(msg)
+
+        validated_data = self._validate_marshmallow_schema(
+            data=response, schema=schemas.WalletBalances()
+        )
+        if not validated_data:
+            raise exceptions.DataValidationError(
+                "Wallet balance response data is not valid"
+            )
+
+        return [
+            messages.WalletBalance(
+                currency_name=wallet_balance["currency"],
+                amount=wallet_balance["amount"],
+            )
+            for wallet_balance in validated_data["wallet_balances"]
         ]
