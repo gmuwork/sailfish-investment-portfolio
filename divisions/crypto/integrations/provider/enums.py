@@ -1,7 +1,7 @@
 import enum
 
-from backend.divisions.blockchain.integrations.clients.bybit import enums as bybit_enums
-from backend.divisions.crypto import enums as crypto_enums
+from divisions.blockchain.integrations.clients.bybit import enums as bybit_enums
+from divisions.crypto import enums as crypto_enums
 
 
 class TradingCategory(enum.Enum):

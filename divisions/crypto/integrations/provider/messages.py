@@ -2,8 +2,8 @@ import datetime
 import decimal
 import typing
 
-from backend.divisions.crypto import enums as crypto_enums
-from backend.divisions.crypto.integrations.provider import enums
+from divisions.crypto import enums as crypto_enums
+from divisions.crypto.integrations.provider import enums
 
 
 class MarketInstrument(

@@ -12,10 +12,10 @@ from urllib import parse as url_parser
 
 from django.conf import settings
 
-from backend.divisions.blockchain.integrations.clients.bybit import enums
-from backend.divisions.blockchain.integrations.clients.bybit import exceptions
-from backend.divisions.common import enums as common_enums
-from backend.divisions.common import utils as common_utils
+from divisions.blockchain.integrations.clients.bybit import enums
+from divisions.blockchain.integrations.clients.bybit import exceptions
+from divisions.common import enums as common_enums
+from divisions.common import utils as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -270,6 +270,15 @@ class ByBitClient(object):
                 params=params,
             )
         )
+
+    def get_wallet_internal_transfers(self):
+        pass
+
+    def get_wallet_deposit_transfers(self):
+        pass
+
+    def get_wallet_withdrawal_transfers(self):
+        pass
 
     def _request(
         self,

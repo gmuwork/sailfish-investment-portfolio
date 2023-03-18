@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "divisions.crypto",
     "divisions.blockchain",
+    "divisions.fab",
 ]
 
 MIGRATION_MODULES = {

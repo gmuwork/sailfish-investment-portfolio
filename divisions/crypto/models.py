@@ -122,7 +122,6 @@ class TradeExecutionTransaction(models.Model):
 
 
 class PortfolioAccountProfile(models.Model):
-    provider = models.PositiveSmallIntegerField()
     name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.CharField(max_length=255, unique=True)

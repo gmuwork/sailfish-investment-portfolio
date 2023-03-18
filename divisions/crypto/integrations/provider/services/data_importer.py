@@ -2,13 +2,13 @@ import datetime
 import logging
 import typing
 
-from backend.divisions.common import utils as common_utils
-from backend.divisions.crypto.integrations.provider import base as base_provider_client
-from backend.divisions.crypto.integrations.provider import enums as provider_enums
-from backend.divisions.crypto.integrations.provider import (
+from divisions.common import utils as common_utils
+from divisions.crypto.integrations.provider import base as base_provider_client
+from divisions.crypto.integrations.provider import enums as provider_enums
+from divisions.crypto.integrations.provider import (
     exceptions as provider_exceptions,
 )
-from backend.divisions.crypto.integrations.provider import messages as provider_messages
+from divisions.crypto.integrations.provider import messages as provider_messages
 from divisions.crypto import models as crypto_models
 
 
@@ -570,48 +570,16 @@ class CryptoProviderImporter(object):
         )
 
         for wallet_balance in wallet_balances:
-            try:
-                self._import_wallet_balance(
-                    wallet_balance=wallet_balance,
-                    wallet_type=wallet_type,
-                )
-            except Exception as e:
-                msg = "Unexpected exception occurred while importing wallet balances (wallet_type={}, currency={}). Error: {}".format(
-                    wallet_type.name,
-                    currency,
-                    common_utils.get_exception_message(exception=e),
-                )
-                logger.exception("{} {}. Continue.".format(self.log_prefix, msg))
-                continue
+            crypto_models.PortfolioWalletBalanceSnapshot.objects.create(
+                provider=self._provider_client.provider.to_integer_choice(),
+                type=wallet_type.name,
+                currency=wallet_balance.currency_name,
+                amount=wallet_balance.amount,
+                created_at=datetime.datetime.now(),
+            )
 
-    def _import_wallet_balance(
-        self,
-        wallet_balance: provider_messages.WalletBalance,
-        wallet_type: provider_enums.WalletType,
-    ) -> None:
-
-        if crypto_models.PortfolioWalletBalanceSnapshot.objects.filter(
-            provider=self._provider_client.provider.to_integer_choice(),
-            type=wallet_type.name,
-            currency=wallet_balance.currency_name,
-        ).exists():
             logger.info(
-                "{} Wallet balance snapshot exists (currency={}, wallet_type={}). Exiting.".format(
+                "{} Created wallet balance snapshot (currency={}, wallet_type={}).".format(
                     self.log_prefix, wallet_balance.currency_name, wallet_type.name
                 )
             )
-            return None
-
-        crypto_models.PortfolioWalletBalanceSnapshot.objects.create(
-            provider=self._provider_client.provider.to_integer_choice(),
-            type=wallet_type.name,
-            currency=wallet_balance.currency_name,
-            amount=wallet_balance.amount,
-            created_at=datetime.datetime.now(),
-        )
-
-        logger.info(
-            "{} Created wallet balance snapshot (currency={}, wallet_type={}).".format(
-                self.log_prefix, wallet_balance.currency_name, wallet_type.name
-            )
-        )

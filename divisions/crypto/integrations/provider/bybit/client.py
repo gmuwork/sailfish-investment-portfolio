@@ -2,19 +2,19 @@ import datetime
 import decimal
 import typing
 
-from backend.divisions.blockchain.integrations.clients.bybit import (
+from divisions.blockchain.integrations.clients.bybit import (
     client as rest_api_client,
 )
-from backend.divisions.blockchain.integrations.clients.bybit import (
+from divisions.blockchain.integrations.clients.bybit import (
     exceptions as rest_api_client_exceptions,
 )
-from backend.divisions.common import utils as common_utils
-from backend.divisions.crypto import enums as crypto_enums
-from backend.divisions.crypto.integrations.provider import base
-from backend.divisions.crypto.integrations.provider import enums
-from backend.divisions.crypto.integrations.provider import exceptions
-from backend.divisions.crypto.integrations.provider import messages
-from backend.divisions.crypto.integrations.provider.bybit import schemas
+from divisions.common import utils as common_utils
+from divisions.crypto import enums as crypto_enums
+from divisions.crypto.integrations.provider import base
+from divisions.crypto.integrations.provider import enums
+from divisions.crypto.integrations.provider import exceptions
+from divisions.crypto.integrations.provider import messages
+from divisions.crypto.integrations.provider.bybit import schemas
 
 
 class ByBitProvider(base.BaseProvider):

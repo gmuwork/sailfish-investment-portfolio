@@ -8,10 +8,10 @@ import typing
 
 from django.db import models as django_db_models
 
-from backend.divisions.crypto import enums as crypto_enums
-from backend.divisions.crypto.integrations.provider import enums as provider_enums
-from backend.divisions.crypto.integrations.provider import messages as provider_messages
-from backend.divisions.crypto.integrations.provider import factory
+from divisions.crypto import enums as crypto_enums
+from divisions.crypto.integrations.provider import enums as provider_enums
+from divisions.crypto.integrations.provider import messages as provider_messages
+from divisions.crypto.integrations.provider import factory
 from divisions.crypto import models as crypto_models
 
 

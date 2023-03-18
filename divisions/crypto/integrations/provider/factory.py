@@ -1,9 +1,9 @@
 import logging
 
-from backend.divisions.crypto import enums as crypto_enums
-from backend.divisions.crypto.integrations.provider import base as base_client
-from backend.divisions.crypto.integrations.provider import exceptions
-from backend.divisions.crypto.integrations.provider.bybit import client as bybit_client
+from divisions.crypto import enums as crypto_enums
+from divisions.crypto.integrations.provider import base as base_client
+from divisions.crypto.integrations.provider import exceptions
+from divisions.crypto.integrations.provider.bybit import client as bybit_client
 
 _LOG_PREFIX = "[PROVIDER-CLIENT-FACTORY]"
 logger = logging.getLogger(__name__)

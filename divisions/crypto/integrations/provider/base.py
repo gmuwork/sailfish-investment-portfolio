@@ -5,10 +5,10 @@ import typing
 
 import marshmallow
 
-from backend.divisions.common import utils as common_utils
-from backend.divisions.crypto import enums as crypto_enums
-from backend.divisions.crypto.integrations.provider import enums
-from backend.divisions.crypto.integrations.provider import messages
+from divisions.common import utils as common_utils
+from divisions.crypto import enums as crypto_enums
+from divisions.crypto.integrations.provider import enums
+from divisions.crypto.integrations.provider import messages
 
 
 class BaseProvider(object):
