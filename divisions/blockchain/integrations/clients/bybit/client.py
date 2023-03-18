@@ -205,6 +205,119 @@ class ByBitClient(object):
             depth=depth,
         )
 
+    def get_wallet_balances(
+        self,
+        account_type: enums.AccountType,
+        currency: typing.Optional[str] = None,
+    ) -> dict:
+        params = {"accountType": account_type.value}
+
+        if currency:
+            params["coin"] = currency
+
+        return self._get_response_content(
+            response=self._request(
+                endpoint="/asset/v3/private/transfer/account-coins/balance/query",
+                method=common_enums.HttpMethod.GET,
+                params=params,
+            )
+        )
+
+    def get_wallet_internal_transfers(
+        self,
+        depth: int = 1,
+        limit: int = 50,
+        currency: typing.Optional[str] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
+    ):
+        params = {
+            "limit": limit,
+        }
+        if currency:
+            params["currency"] = currency
+
+        if from_datetime:
+            params["startTime"] = common_utils.convert_timestamp_to_milliseconds(
+                timestamp=from_datetime.timestamp()
+            )
+
+        if to_datetime:
+            params["endTime"] = common_utils.convert_timestamp_to_milliseconds(
+                timestamp=to_datetime.timestamp()
+            )
+
+        return self._get_paginated_response(
+            endpoint="/v5/asset/transfer/query-inter-transfer-list",
+            method=common_enums.HttpMethod.GET,
+            params=params,
+            data_field="list",
+            depth=depth,
+        )
+
+    def get_wallet_deposit_transfers(
+        self,
+        depth: int = 1,
+        limit: int = 50,
+        currency: typing.Optional[str] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
+    ):
+        params = {
+            "limit": limit,
+        }
+        if currency:
+            params["currency"] = currency
+
+        if from_datetime:
+            params["startTime"] = common_utils.convert_timestamp_to_milliseconds(
+                timestamp=from_datetime.timestamp()
+            )
+
+        if to_datetime:
+            params["endTime"] = common_utils.convert_timestamp_to_milliseconds(
+                timestamp=to_datetime.timestamp()
+            )
+
+        return self._get_paginated_response(
+            endpoint="/v5/asset/deposit/query-record",
+            method=common_enums.HttpMethod.GET,
+            params=params,
+            data_field="rows",
+            depth=depth,
+        )
+
+    def get_wallet_withdrawal_transfers(
+        self,
+        depth: int = 1,
+        limit: int = 50,
+        withdrawal_type: enums.WithdrawalType = enums.WithdrawalType.ALL,
+        currency: typing.Optional[str] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
+    ):
+        params = {"limit": limit, "withdrawType": withdrawal_type.value}
+        if currency:
+            params["currency"] = currency
+
+        if from_datetime:
+            params["startTime"] = common_utils.convert_timestamp_to_milliseconds(
+                timestamp=from_datetime.timestamp()
+            )
+
+        if to_datetime:
+            params["endTime"] = common_utils.convert_timestamp_to_milliseconds(
+                timestamp=to_datetime.timestamp()
+            )
+
+        return self._get_paginated_response(
+            endpoint="/v5/asset/withdraw/query-record",
+            method=common_enums.HttpMethod.GET,
+            params=params,
+            data_field="rows",
+            depth=depth,
+        )
+
     def _get_response_content(self, response: requests.Response) -> dict:
         content = simplejson.loads(
             response.content,
@@ -252,33 +365,6 @@ class ByBitClient(object):
             params["cursor"] = response["nextPageCursor"]
 
         return data
-
-    def get_wallet_balances(
-        self,
-        account_type: enums.AccountType,
-        currency: typing.Optional[str] = None,
-    ) -> dict:
-        params = {"accountType": account_type.value}
-
-        if currency:
-            params["coin"] = currency
-
-        return self._get_response_content(
-            response=self._request(
-                endpoint="/asset/v3/private/transfer/account-coins/balance/query",
-                method=common_enums.HttpMethod.GET,
-                params=params,
-            )
-        )
-
-    def get_wallet_internal_transfers(self):
-        pass
-
-    def get_wallet_deposit_transfers(self):
-        pass
-
-    def get_wallet_withdrawal_transfers(self):
-        pass
 
     def _request(
         self,
