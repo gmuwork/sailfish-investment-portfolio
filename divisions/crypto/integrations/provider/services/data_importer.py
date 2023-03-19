@@ -2,6 +2,7 @@ import datetime
 import logging
 import typing
 
+from divisions.common import enums as common_enums
 from divisions.common import utils as common_utils
 from divisions.crypto.integrations.provider import base as base_provider_client
 from divisions.crypto.integrations.provider import enums as provider_enums
@@ -536,7 +537,7 @@ class CryptoProviderImporter(object):
     def import_wallet_balances(
         self,
         wallet_type: provider_enums.WalletType,
-        currency: typing.Optional[str] = None,
+        currency: typing.Optional[common_enums.Currency] = None,
     ) -> None:
         try:
             wallet_balances = self._provider_client.get_wallet_balances(
@@ -583,3 +584,109 @@ class CryptoProviderImporter(object):
                     self.log_prefix, wallet_balance.currency_name, wallet_type.name
                 )
             )
+
+    def import_wallet_internal_transfers(
+        self,
+        wallet_type: provider_enums.WalletType,
+        depth: int = 1,
+        currency: typing.Optional[common_enums.Currency] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
+        dry_run: bool = False,
+    ) -> None:
+        try:
+            wallet_internal_transfers = (
+                self._provider_client.get_wallet_internal_transfers(
+                    wallet_type=wallet_type,
+                    depth=depth,
+                    currency=currency,
+                    from_datetime=from_datetime,
+                    to_datetime=to_datetime,
+                )
+            )
+        except provider_exceptions.ProviderError as e:
+            msg = "Unable to import wallet internal transfers (wallet_type={}, currency={}). Error: {}".format(
+                wallet_type.name,
+                currency,
+                common_utils.get_exception_message(exception=e),
+            )
+            logger.exception("{} {}.".format(self.log_prefix, msg))
+            # TODO: Send mail to managers
+            return None
+
+        if not wallet_internal_transfers:
+            logger.info(
+                "{} No wallet internal transfers fetched (wallet_type={}, currency={}). Exiting.".format(
+                    self.log_prefix,
+                    wallet_type.name,
+                    currency,
+                )
+            )
+            return None
+
+        logger.info(
+            "{} Fetched {} wallet internal transfers for currencies to import.".format(
+                self.log_prefix, len(wallet_internal_transfers)
+            )
+        )
+
+        for wallet_internal_transfer in wallet_internal_transfers:
+            try:
+                self._import_wallet_internal_transfer(
+                    wallet_internal_transfer=wallet_internal_transfer, dry_run=dry_run
+                )
+            except Exception as e:
+                msg = "Unexpected exception occurred while importing wallet internal transfers (wallet_type={}, currency={}). Error: {}".format(
+                    wallet_type.name,
+                    currency,
+                    common_utils.get_exception_message(exception=e),
+                )
+                logger.exception("{} {}. Continue.".format(self.log_prefix, msg))
+                continue
+
+    def _import_wallet_internal_transfer(
+        self, wallet_internal_transfer: provider_messages.WalletTransfer, dry_run: bool
+    ) -> None:
+        if crypto_models.PortfolioTransfer.objects.filter(
+            txid=wallet_internal_transfer.txid
+        ).exists():
+            logger.info(
+                "{} Wallet internal transfer already exists (currency={}, transaction_id={}). Exiting.".format(
+                    self.log_prefix,
+                    wallet_internal_transfer.transaction_currency,
+                    wallet_internal_transfer.txid,
+                )
+            )
+            return None
+
+        if dry_run:
+            logger.info(
+                "{} [DRY-RUN] Would create wallet internal transfer (currency={}, transaction_id={}). Exiting.".format(
+                    self.log_prefix,
+                    wallet_internal_transfer.transaction_currency,
+                    wallet_internal_transfer.txid,
+                )
+            )
+            return None
+
+        crypto_models.PortfolioTransfer.objects.create(
+            provider=self._provider_client.provider.to_integer_choice(),
+            transaction_currency=wallet_internal_transfer.transaction_currency,
+            chain_currency=wallet_internal_transfer.chain_currency,
+            type=wallet_internal_transfer.type,
+            status=wallet_internal_transfer.status,
+            txid=wallet_internal_transfer.txid,
+            from_recipient=wallet_internal_transfer.from_recipient,
+            to_recipient=wallet_internal_transfer.to_recipient,
+            portfolio_type=wallet_internal_transfer.portfolio_type,
+            amount=wallet_internal_transfer.amount,
+            network_datetime=wallet_internal_transfer.network_datetime,
+        )
+
+        logger.info(
+            "{} Created wallet internal transfer (currency={}, transaction_id={}).".format(
+                self.log_prefix,
+                wallet_internal_transfer.transaction_currency,
+                wallet_internal_transfer.txid,
+            )
+        )

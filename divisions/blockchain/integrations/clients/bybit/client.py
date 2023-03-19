@@ -208,12 +208,12 @@ class ByBitClient(object):
     def get_wallet_balances(
         self,
         account_type: enums.AccountType,
-        currency: typing.Optional[str] = None,
+        currency: typing.Optional[common_enums.Currency] = None,
     ) -> dict:
         params = {"accountType": account_type.value}
 
         if currency:
-            params["coin"] = currency
+            params["coin"] = currency.value
 
         return self._get_response_content(
             response=self._request(
@@ -227,7 +227,7 @@ class ByBitClient(object):
         self,
         depth: int = 1,
         limit: int = 50,
-        currency: typing.Optional[str] = None,
+        currency: typing.Optional[common_enums.Currency] = None,
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
     ):
@@ -235,7 +235,7 @@ class ByBitClient(object):
             "limit": limit,
         }
         if currency:
-            params["currency"] = currency
+            params["coin"] = currency.value
 
         if from_datetime:
             params["startTime"] = common_utils.convert_timestamp_to_milliseconds(
@@ -259,7 +259,7 @@ class ByBitClient(object):
         self,
         depth: int = 1,
         limit: int = 50,
-        currency: typing.Optional[str] = None,
+        currency: typing.Optional[common_enums.Currency] = None,
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
     ):
@@ -267,7 +267,7 @@ class ByBitClient(object):
             "limit": limit,
         }
         if currency:
-            params["currency"] = currency
+            params["coin"] = currency.value
 
         if from_datetime:
             params["startTime"] = common_utils.convert_timestamp_to_milliseconds(
@@ -292,13 +292,13 @@ class ByBitClient(object):
         depth: int = 1,
         limit: int = 50,
         withdrawal_type: enums.WithdrawalType = enums.WithdrawalType.ALL,
-        currency: typing.Optional[str] = None,
+        currency: typing.Optional[common_enums.Currency] = None,
         from_datetime: typing.Optional[datetime.datetime] = None,
         to_datetime: typing.Optional[datetime.datetime] = None,
     ):
         params = {"limit": limit, "withdrawType": withdrawal_type.value}
         if currency:
-            params["currency"] = currency
+            params["coin"] = currency.value
 
         if from_datetime:
             params["startTime"] = common_utils.convert_timestamp_to_milliseconds(
@@ -314,7 +314,7 @@ class ByBitClient(object):
             endpoint="/v5/asset/withdraw/query-record",
             method=common_enums.HttpMethod.GET,
             params=params,
-            data_field="rows",
+            data_field="list",
             depth=depth,
         )
 

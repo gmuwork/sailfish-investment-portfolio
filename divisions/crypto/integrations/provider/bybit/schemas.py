@@ -1,3 +1,4 @@
+import datetime
 import typing
 
 from marshmallow import fields
@@ -149,3 +150,27 @@ class WalletBalances(Schema):
     @pre_load
     def prepare_data(self, data: typing.List[dict], **kwargs: typing.Any) -> dict:
         return {"wallet_balances": data["balance"]}
+
+
+class WalletInternalTransfer(Schema):
+    transaction_id = fields.Str(required=True, data_key="transferId")
+    currency = fields.Str(required=True, data_key="coin")
+    amount = fields.Decimal(required=True, data_key="amount")
+    from_recipient = fields.Str(required=True, data_key="fromAccountType")
+    to_recipient = fields.Str(required=True, data_key="toAccountType")
+    created_at = fields.Integer(required=True, data_key="timestamp")
+    status = fields.Str(required=True, data_key="status")
+
+    @post_load
+    def prepare_data(self, data: dict, **kwargs: typing.Any) -> dict:
+        data["created_at"] = data["created_at"] // 1000
+
+        return data
+
+
+class WalletInternalTransfers(Schema):
+    wallet_internal_transfers = fields.Nested(WalletInternalTransfer, many=True)
+
+    @pre_load
+    def prepare_data(self, data: typing.List[dict], **kwargs: typing.Any) -> dict:
+        return {"wallet_internal_transfers": data}

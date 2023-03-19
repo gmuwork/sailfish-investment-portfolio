@@ -144,7 +144,7 @@ class WalletBalance(
     typing.NamedTuple(
         "WalletBalance",
         [
-            ("currency_name", str),
+            ("currency", str),
             ("amount", decimal.Decimal),
         ],
     )
@@ -153,3 +153,27 @@ class WalletBalance(
 
 
 WalletBalance.__new__.__defaults__ = (None,) * len(WalletBalance._fields)
+
+
+class WalletTransfer(
+    typing.NamedTuple(
+        "WalletTransfer",
+        [
+            ("transaction_currency", str),
+            ("chain_currency", str),
+            ("type", str),
+            ("status", str),
+            ("txid", str),
+            ("from_recipient", typing.Optional[str]),
+            ("to_recipient", typing.Optional[str]),
+            ("portfolio_type", str),
+            ("amount", decimal.Decimal),
+            ("fee", typing.Optional[decimal.Decimal]),
+            ("network_datetime", datetime.datetime),
+        ],
+    )
+):
+    __slots__ = ()
+
+
+WalletTransfer.__new__.__defaults__ = (None,) * len(WalletTransfer._fields)

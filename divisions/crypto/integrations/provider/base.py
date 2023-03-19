@@ -5,6 +5,7 @@ import typing
 
 import marshmallow
 
+from divisions.common import enums as common_enums
 from divisions.common import utils as common_utils
 from divisions.crypto import enums as crypto_enums
 from divisions.crypto.integrations.provider import enums
@@ -90,9 +91,24 @@ class BaseProvider(object):
     ) -> typing.List[messages.TradeExecution]:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_wallet_balances(
-        self, wallet_type: enums.WalletType, currency: typing.Optional[str]
+        self,
+        wallet_type: enums.WalletType,
+        currency: typing.Optional[common_enums.Currency],
     ) -> typing.List[messages.WalletBalance]:
+        pass
+
+    @abc.abstractmethod
+    def get_wallet_internal_transfers(
+        self,
+        wallet_type: enums.WalletType,
+        depth: int = 1,
+        limit: int = 50,
+        currency: typing.Optional[common_enums.Currency] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
+    ) -> typing.List[messages.WalletTransfer]:
         pass
 
     def _validate_marshmallow_schema(

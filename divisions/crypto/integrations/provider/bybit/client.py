@@ -1,13 +1,16 @@
 import datetime
-import decimal
 import typing
 
 from divisions.blockchain.integrations.clients.bybit import (
     client as rest_api_client,
 )
 from divisions.blockchain.integrations.clients.bybit import (
+    enums as rest_api_client_enums,
+)
+from divisions.blockchain.integrations.clients.bybit import (
     exceptions as rest_api_client_exceptions,
 )
+from divisions.common import enums as common_enums
 from divisions.common import utils as common_utils
 from divisions.crypto import enums as crypto_enums
 from divisions.crypto.integrations.provider import base
@@ -312,7 +315,7 @@ class ByBitProvider(base.BaseProvider):
     def get_wallet_balances(
         self,
         wallet_type: enums.WalletType,
-        currency: typing.Optional[str] = None,
+        currency: typing.Optional[common_enums.Currency] = None,
     ) -> typing.List[messages.WalletBalance]:
         try:
             response = self.get_rest_api_client().get_wallet_balances(
@@ -338,8 +341,103 @@ class ByBitProvider(base.BaseProvider):
 
         return [
             messages.WalletBalance(
-                currency_name=wallet_balance["currency"],
+                currency=wallet_balance["currency"],
                 amount=wallet_balance["amount"],
             )
             for wallet_balance in validated_data["wallet_balances"]
         ]
+
+    def get_wallet_internal_transfers(
+        self,
+        wallet_type: enums.WalletType,
+        depth: int = 1,
+        limit: int = 50,
+        currency: typing.Optional[common_enums.Currency] = None,
+        from_datetime: typing.Optional[datetime.datetime] = None,
+        to_datetime: typing.Optional[datetime.datetime] = None,
+    ) -> typing.List[messages.WalletTransfer]:
+        if wallet_type != enums.WalletType.DERIVATIVE:
+            msg = (
+                "Wallet type {} is not supported for internal wallet transfers".format(
+                    wallet_type.name
+                )
+            )
+            self.logger.info("{} {}. Exiting.".format(self.log_prefix, msg))
+            raise exceptions.DataValidationError(msg)
+
+        try:
+            response = self.get_rest_api_client().get_wallet_internal_transfers(
+                depth=depth,
+                limit=limit,
+                currency=currency,
+                from_datetime=from_datetime,
+                to_datetime=to_datetime,
+            )
+        except rest_api_client_exceptions.ByBitClientError as e:
+            msg = "Unable to fetch wallet internal transfers from API (currency={}). Error: {}".format(
+                currency,
+                common_utils.get_exception_message(exception=e),
+            )
+            self.logger.exception("{} {}.".format(self.log_prefix, msg))
+            raise exceptions.APIClientError(msg)
+
+        validated_data = self._validate_marshmallow_schema(
+            data=response, schema=schemas.WalletInternalTransfers()
+        )
+        if not validated_data:
+            raise exceptions.DataValidationError(
+                "Wallet internal transfers response data is not valid"
+            )
+
+        wallet_transfers = []
+        for wallet_internal_transfer in validated_data["wallet_internal_transfers"]:
+            from_recipient = enums.WalletType.convert_from_internal(
+                wallet_type=rest_api_client_enums.AccountType(
+                    wallet_internal_transfer["from_recipient"]
+                )
+            )
+            to_recipient = enums.WalletType.convert_from_internal(
+                wallet_type=rest_api_client_enums.AccountType(
+                    wallet_internal_transfer["to_recipient"]
+                )
+            )
+
+            if wallet_type not in [from_recipient, to_recipient]:
+                self.logger.info(
+                    "{} Wallet transfer (id={}) is not of type {}. Continue.".format(
+                        self.log_prefix,
+                        wallet_internal_transfer["transaction_id"],
+                        wallet_type.name,
+                    )
+                )
+                continue
+
+            wallet_transfers.append(
+                messages.WalletTransfer(
+                    transaction_currency=wallet_internal_transfer["currency"],
+                    chain_currency=common_utils.get_chain_currency(
+                        currency=common_enums.Currency(
+                            wallet_internal_transfer["currency"]
+                        )
+                    ).name,
+                    type=enums.WalletTransferType.INTERNAL_DEPOSIT.value
+                    if wallet_type == to_recipient
+                    else enums.WalletTransferType.INTERNAL_WITHDRAWAL.value,
+                    status=enums.WalletTransferStatus.convert_from_internal(
+                        status=rest_api_client_enums.WalletInternalTransferStatus(
+                            wallet_internal_transfer["status"]
+                        )
+                    ).value,
+                    txid=wallet_internal_transfer["transaction_id"],
+                    from_recipient=from_recipient.name,
+                    to_recipient=to_recipient.name,
+                    portfolio_type=wallet_type.name,
+                    amount=wallet_internal_transfer["amount"],
+                    fee=None,
+                    network_datetime=datetime.datetime.fromtimestamp(
+                        wallet_internal_transfer["created_at"]
+                    ),
+                )
+            )
+
+        return wallet_transfers

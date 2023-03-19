@@ -1,4 +1,5 @@
 import enum
+import typing
 
 
 class HttpMethod(enum.Enum):
@@ -8,3 +9,4 @@ class HttpMethod(enum.Enum):
 
 class Currency(enum.Enum):
     USDT = "USDT"
+    ETH = "ETH"

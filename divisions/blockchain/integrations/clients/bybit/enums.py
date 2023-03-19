@@ -51,3 +51,9 @@ class WithdrawalType(enum.Enum):
     ON_CHAIN = 0
     OFF_CHAIN = 1
     ALL = 2
+
+
+class WalletInternalTransferStatus(enum.Enum):
+    SUCCESS = "SUCCESS"
+    PENDING = "PENDING"
+    FAILED = "FAILED"

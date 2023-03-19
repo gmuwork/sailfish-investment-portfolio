@@ -142,7 +142,9 @@ class PortfolioTransfer(models.Model):
     type = models.CharField(max_length=255)
     status = models.CharField(max_length=255)
     txid = models.CharField(max_length=255, null=True)
-    address = models.CharField(max_length=255, null=True)
+    from_recipient = models.CharField(max_length=255, null=True)
+    to_recipient = models.CharField(max_length=255, null=True)
+    portfolio_type = models.CharField(max_length=255)
     amount = models.DecimalField(
         decimal_places=8, max_digits=21, default=decimal.Decimal("0")
     )
@@ -151,14 +153,16 @@ class PortfolioTransfer(models.Model):
         max_digits=21,
         null=True,
     )
-    created_at = models.DateTimeField()
+    network_datetime = models.DateTimeField(null=True)
+    created_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
     portfolio_user = models.ForeignKey(
         PortfolioAccountProfile,
         on_delete=models.PROTECT,
         related_name="account_transfer",
         null=True,
     )
-    note = models.CharField(max_length=255)
+    note = models.CharField(max_length=255, null=True)
 
     class Meta:
         app_label = "crypto"
@@ -172,7 +176,7 @@ class PortfolioWalletBalanceSnapshot(models.Model):
     amount = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        default=decimal.Decimal('0'),
+        default=decimal.Decimal("0"),
     )
     created_at = models.DateTimeField()
 

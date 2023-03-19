@@ -1,4 +1,5 @@
 import enum
+import typing
 
 from divisions.blockchain.integrations.clients.bybit import enums as bybit_enums
 from divisions.crypto import enums as crypto_enums
@@ -64,7 +65,12 @@ class TradeExecutionType(enum.Enum):
 
 
 class WalletType(enum.Enum):
-    DERIVATIVE = "derivative"
+    DERIVATIVE = "DERIVATIVE"
+    SPOT = "SPOT"
+    INVESTMENT = "INVESTMENT"
+    OPTION = "OPTION"
+    GENERAL = "GENERAL"
+    FUND = "FUND"
 
     def convert_to_internal(
         self, provider: crypto_enums.CryptoProvider
@@ -74,3 +80,39 @@ class WalletType(enum.Enum):
                 self.DERIVATIVE: bybit_enums.AccountType.CONTRACT,
             }
         }[provider][self]
+
+    @staticmethod
+    def convert_from_internal(
+        wallet_type: typing.Union[bybit_enums.AccountType],
+    ) -> "WalletType":
+        return {
+            bybit_enums.AccountType.CONTRACT: WalletType.DERIVATIVE,
+            bybit_enums.AccountType.SPOT: WalletType.SPOT,
+            bybit_enums.AccountType.INVESTMENT: WalletType.INVESTMENT,
+            bybit_enums.AccountType.OPTION: WalletType.OPTION,
+            bybit_enums.AccountType.UNIFIED: WalletType.GENERAL,
+            bybit_enums.AccountType.FUND: WalletType.FUND,
+        }[wallet_type]
+
+
+class WalletTransferStatus(enum.Enum):
+    SUCCESS = "SUCCESS"
+    PENDING = "PENDING"
+    FAILED = "FAILED"
+
+    @staticmethod
+    def convert_from_internal(
+        status: typing.Union[bybit_enums.WalletInternalTransferStatus],
+    ) -> "WalletTransferStatus":
+        return {
+            bybit_enums.WalletInternalTransferStatus.SUCCESS: WalletTransferStatus.SUCCESS,
+            bybit_enums.WalletInternalTransferStatus.FAILED: WalletTransferStatus.FAILED,
+            bybit_enums.WalletInternalTransferStatus.PENDING: WalletTransferStatus.PENDING,
+        }[status]
+
+
+class WalletTransferType(enum.Enum):
+    INTERNAL_DEPOSIT = "INTERNAL_DEPOSIT"
+    INTERNAL_WITHDRAWAL = "INTERNAL_WITHDRAWAL"
+    DEPOSIT = "DEPOSIT"
+    WITHDRAWAL = "WITHDRAWAL"
