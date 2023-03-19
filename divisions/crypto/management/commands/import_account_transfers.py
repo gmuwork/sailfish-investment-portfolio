@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = """
             Imports account transfer data.
-            ex. python manage.py import account transfers --provider=BYBIT --wallet-type=DERIVATIVE --currency=USDT --depth=1 --from-datetime=2022-01-01 --to-datetime=2023-01-01 [--dry-run]
+            ex. python manage.py import_account_transfers --provider=BYBIT --wallet-type=DERIVATIVE --currency=USDT --from-datetime=2023-01-01 --to-datetime=2023-02-01 [--dry-run]
             """
 
     def add_arguments(self, parser):
