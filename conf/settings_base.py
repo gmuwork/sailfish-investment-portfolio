@@ -118,24 +118,31 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
-        'log_file': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/sailfish.log',
+        "log_file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs/sailfish.log",
+            "formatter": "verbose",
         },
     },
-    'loggers': {
-        '': {
-            'handlers': ['console', 'log_file'],
-            'level': 'INFO',
-            'propagate': True,
+    "loggers": {
+        "": {
+            "handlers": ["console", "log_file"],
+            "level": "INFO",
+            "propagate": True,
+        },
+    },
+    "formatters": {
+        "verbose": {
+            "format": "%(levelname)s %(asctime)s %(name)s.%(funcName)s:%(lineno)s %(message)s"
         },
     },
 }

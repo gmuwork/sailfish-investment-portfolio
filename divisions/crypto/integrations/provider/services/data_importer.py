@@ -573,15 +573,15 @@ class CryptoProviderImporter(object):
         for wallet_balance in wallet_balances:
             crypto_models.PortfolioWalletBalanceSnapshot.objects.create(
                 provider=self._provider_client.provider.to_integer_choice(),
-                type=wallet_type.name,
-                currency=wallet_balance.currency_name,
+                portfolio_type=wallet_type.name,
+                currency=wallet_balance.currency,
                 amount=wallet_balance.amount,
                 created_at=datetime.datetime.now(),
             )
 
             logger.info(
                 "{} Created wallet balance snapshot (currency={}, wallet_type={}).".format(
-                    self.log_prefix, wallet_balance.currency_name, wallet_type.name
+                    self.log_prefix, wallet_balance.currency, wallet_type.name
                 )
             )
 

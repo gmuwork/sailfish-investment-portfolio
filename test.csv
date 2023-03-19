@@ -1,0 +1,3 @@
+Time,Currency,Contract,Type,Direction,Quantity,Position,Filled Price,Funding,Fee Paid,Cash Flow,Change,Wallet Balance,Fee Rate,Trade ID,Order ID,Info
+2023-02-28 15:50:41,USDT,ENSUSDT,trade,Open Short,3.9,-40.9,15.74,,0.03069300,0.00000000,-0.03069300,99740.2377,0.00050000,24b0d9ff-ffbc-5918-807c-83a8fb4c8f73,a4ece277-7a06-419a-a613-ea06e96788c5,
+2023-02-28 15:50:41,USDT,ENSUSDT,trade,Open Short,37.0,-37.0,15.74,,0.29119000,0.00000000,-0.29119000,99740.2684,0.00050000,b9c3366c-f4db-5ee1-867c-ecb528e0d1c7,a4ece277-7a06-419a-a613-ea06e96788c5,

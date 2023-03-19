@@ -135,6 +135,26 @@ class PortfolioAccountProfile(models.Model):
         db_table = "crypto_portfolioaccountprofile"
 
 
+# LATER ON THIS CAN CONTAIN STATUS ETC - SOURCE TRUTH FOR CONNECTING INVESTOR WITH PORTFOLIO
+class PortfolioAccountInvestmentParticipation(models.Model):
+    portfolio_user = models.ForeignKey(
+        PortfolioAccountProfile,
+        on_delete=models.PROTECT,
+        related_name="portfolio_investment_user",
+        null=False,
+    )
+    investment_percentage = models.DecimalField(
+        decimal_places=8,
+        max_digits=21,
+        null=False,
+    )
+    portfolio_id = models.SmallIntegerField(null=True, default=1)
+
+    class Meta:
+        app_label = "crypto"
+        db_table = "crypto_portfolioaccountinvestmentparticipation"
+
+
 class PortfolioTransfer(models.Model):
     provider = models.PositiveSmallIntegerField()
     transaction_currency = models.CharField(max_length=255)
@@ -171,7 +191,7 @@ class PortfolioTransfer(models.Model):
 
 class PortfolioWalletBalanceSnapshot(models.Model):
     provider = models.PositiveSmallIntegerField()
-    type = models.CharField(max_length=255)
+    portfolio_type = models.CharField(max_length=255)
     currency = models.CharField(max_length=255)
     amount = models.DecimalField(
         decimal_places=8,

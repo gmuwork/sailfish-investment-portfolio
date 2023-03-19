@@ -116,3 +116,14 @@ class WalletTransferType(enum.Enum):
     INTERNAL_WITHDRAWAL = "INTERNAL_WITHDRAWAL"
     DEPOSIT = "DEPOSIT"
     WITHDRAWAL = "WITHDRAWAL"
+    COMMISSION = "COMMISSION"
+
+
+class PortfolioAccountType(enum.Enum):
+    MANAGER = "MANAGER"
+    INVESTOR = "INVESTOR"
+
+
+class PortfolioAccountStatus(enum.Enum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
