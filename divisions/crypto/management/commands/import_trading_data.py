@@ -69,7 +69,7 @@ class Command(BaseCommand):
     from_datetime = None
     to_datetime = None
     dry_run = None
-    time_to_sleep = 0.5
+    time_to_sleep = 0.2
 
     log_prefix = "[IMPORT-TRADING-DATA]"
 

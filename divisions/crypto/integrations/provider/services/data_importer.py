@@ -235,8 +235,6 @@ class CryptoProviderImporter(object):
         if not (from_datetime and to_datetime):
             last_pnl_transaction = (
                 crypto_models.TradePnLTransaction.objects.filter(
-                    order__isnull=False,
-                    order__order_status=provider_enums.TradeOrderStatus.FILLED.value,
                     order__provider=self._provider_client.provider.to_integer_choice(),
                     order__instrument_name=market_instrument_symbol,
                 )
@@ -336,14 +334,6 @@ class CryptoProviderImporter(object):
 
         trade_order = crypto_models.TradeOrder.objects.filter(
             order_id=pnl_transaction.order_id,
-            order_status__in=[
-                provider_enums.TradeOrderStatus.FILLED.convert_to_internal(
-                    provider=self._provider_client.provider
-                ).value,
-                provider_enums.TradeOrderStatus.CANCELLED.convert_to_internal(
-                    provider=self._provider_client.provider
-                ).value,
-            ],
         ).first()
 
         # TODO: ADD SENDING OF MANAGER MAIL
