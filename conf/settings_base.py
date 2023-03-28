@@ -40,10 +40,12 @@ INSTALLED_APPS = [
     "divisions.crypto",
     "divisions.blockchain",
     "divisions.fab",
+    "divisions.account",
 ]
 
 MIGRATION_MODULES = {
-    "crypto": "migrations",
+    "crypto": "migrations.crypto",
+    "account": "migrations.account",
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
