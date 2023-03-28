@@ -6,6 +6,7 @@ class AccountProfile(models.Model):
     image_url = models.CharField(max_length=255, null=True, blank=True)
     referrer_uuid = models.CharField(max_length=255, null=False, unique=True)
     status = models.PositiveSmallIntegerField()  # TODO: Add enums
+    selected_currency = models.PositiveSmallIntegerField(default=1)
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
