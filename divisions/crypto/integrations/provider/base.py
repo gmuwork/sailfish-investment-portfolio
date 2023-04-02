@@ -46,7 +46,7 @@ class BaseProvider(object):
     def get_trade_positions(
         self,
         trading_category: enums.TradingCategory,
-        market_instrument_symbol: str,
+        currency: common_enums.Currency,
         depth: int = 1,
         limit: int = 50,
     ) -> typing.List[messages.TradePosition]:

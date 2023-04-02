@@ -83,7 +83,7 @@ class ByBitClient(object):
 
     def get_trade_positions(
         self,
-        symbol: str,
+        currency: common_enums.Currency,
         category: enums.TradingCategory,
         limit: int = 50,
         depth: int = 1,
@@ -91,7 +91,11 @@ class ByBitClient(object):
         return self._get_paginated_response(
             endpoint="/v5/position/list",
             method=common_enums.HttpMethod.GET,
-            params={"symbol": symbol, "category": category.value, "limit": limit},
+            params={
+                "settleCoin": currency.value,
+                "category": category.value,
+                "limit": limit,
+            },
             data_field="list",
             depth=depth,
         )

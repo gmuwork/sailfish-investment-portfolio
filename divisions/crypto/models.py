@@ -3,8 +3,8 @@ from django.db import models
 
 
 class MarketInstrument(models.Model):
-    name = models.CharField(max_length=255, null=False)
-    status = models.CharField(max_length=255, null=False)
+    name = models.CharField(max_length=255)
+    status = models.CharField(max_length=255)
     provider = models.PositiveSmallIntegerField()
 
     class Meta:
@@ -13,10 +13,27 @@ class MarketInstrument(models.Model):
         unique_together = ["name", "provider"]
 
 
+class TradePosition(models.Model):
+    instrument_name = models.CharField(max_length=255)
+    unrealised_pnl = models.DecimalField(
+        decimal_places=8,
+        max_digits=21,
+    )
+
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(auto_now_add=True)
+    provider = models.PositiveSmallIntegerField()
+
+    class Meta:
+        app_label = "crypto"
+        db_table = "crypto_tradeposition"
+        unique_together = ["instrument_name", "unrealised_pnl", "provider"]
+
+
 class TradeOrder(models.Model):
     # TODO: Instrument name can be FK to MarketInstrument
-    instrument_name = models.CharField(max_length=255, null=False)
-    order_id = models.CharField(max_length=255, null=False, unique=True)
+    instrument_name = models.CharField(max_length=255)
+    order_id = models.CharField(max_length=255, unique=True)
     order_side = models.CharField(max_length=255, null=True)
     order_quantity = models.DecimalField(
         decimal_places=8,
@@ -90,8 +107,8 @@ class TradePnLTransaction(models.Model):
 
 
 class TradeExecutionTransaction(models.Model):
-    instrument_name = models.CharField(max_length=255, null=False)
-    execution_id = models.CharField(max_length=255, null=False, unique=True)
+    instrument_name = models.CharField(max_length=255)
+    execution_id = models.CharField(max_length=255, unique=True)
     execution_side = models.CharField(max_length=255)
     execution_type = models.CharField(max_length=255)
     executed_fee = models.DecimalField(
@@ -141,12 +158,10 @@ class PortfolioAccountInvestmentParticipation(models.Model):
         PortfolioAccountProfile,
         on_delete=models.PROTECT,
         related_name="portfolio_investment_user",
-        null=False,
     )
     investment_percentage = models.DecimalField(
         decimal_places=8,
         max_digits=21,
-        null=False,
     )
     portfolio_id = models.SmallIntegerField(null=True, default=1)
 

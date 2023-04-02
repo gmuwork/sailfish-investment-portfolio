@@ -48,7 +48,7 @@ class CryptoProviderImporter(object):
             logger.info(
                 "{} No market instruments to import (trading_category={}). Exiting.".format(
                     self.log_prefix,
-                    market_instrument_symbol,
+                    trading_category.name,
                 )
             )
             return None
@@ -678,5 +678,97 @@ class CryptoProviderImporter(object):
                 self.log_prefix,
                 wallet_internal_transfer.transaction_currency,
                 wallet_internal_transfer.txid,
+            )
+        )
+
+    def import_trade_positions(
+        self,
+        trading_category: provider_enums.TradingCategory,
+        currency: common_enums.Currency,
+        depth: int = 1,
+        dry_run=False,
+    ) -> None:
+        logger.info('{} Deleting current trade positions.'.format(self.log_prefix))
+        crypto_models.TradePosition.objects.all().delete()
+
+        try:
+            trade_positions = self._provider_client.get_trade_positions(
+                depth=depth,
+                limit=50,
+                trading_category=trading_category,
+                currency=currency,
+            )
+        except provider_exceptions.ProviderError as e:
+            msg = "Unable to fetch trade positions (currency={}, trading_category={}). Error: {}".format(
+                currency.name,
+                trading_category.name,
+                common_utils.get_exception_message(exception=e),
+            )
+            logger.exception("{} {}.".format(self.log_prefix, msg))
+            # TODO: Send mail to managers
+            return None
+
+        if not trade_positions:
+            logger.info(
+                "{} No trade positions to import (currency={}, trading_category={}). Exiting.".format(
+                    self.log_prefix,
+                    currency.name,
+                    trading_category.name,
+                )
+            )
+            return None
+
+        logger.info(
+            "{} Fetched {} trade positions to import".format(
+                self.log_prefix, len(trade_positions)
+            )
+        )
+
+        for trade_position in trade_positions:
+            try:
+                self._import_trade_position(
+                    trade_position=trade_position, dry_run=dry_run
+                )
+            except Exception as e:
+                msg = "Unexpected exception occurred while importing trade positions  (currency={}). Error: {}".format(
+                    currency.name,
+                    common_utils.get_exception_message(exception=e),
+                )
+                logger.exception("{} {}. Continue.".format(self.log_prefix, msg))
+                continue
+
+    def _import_trade_position(
+        self, trade_position: provider_messages.TradePosition, dry_run: bool
+    ) -> None:
+        if crypto_models.TradePosition.objects.filter(
+            instrument_name=trade_position.market_instrument_name,
+            provider=self._provider_client.provider.to_integer_choice(),
+            unrealised_pnl=trade_position.unrealised_pnl,
+            created_at=trade_position.created_at,
+        ).exists():
+            logger.info(
+                "{} Trade position already exists (market_instrument_symbol={}). Continue.".format(
+                    self.log_prefix, trade_position.market_instrument_name
+                )
+            )
+            return None
+
+        if dry_run:
+            logger.info(
+                "{} [DRY-RUN] Would create trade position (market_instrument_symbol={}). Continue.".format(
+                    self.log_prefix, trade_position.market_instrument_name
+                )
+            )
+            return None
+
+        crypto_models.TradePosition.objects.create(
+            instrument_name=trade_position.market_instrument_name,
+            unrealised_pnl=trade_position.unrealised_pnl,
+            provider=self._provider_client.provider.to_integer_choice(),
+            created_at=trade_position.created_at,
+        )
+        logger.info(
+            "{} Created trade position (market_instrument_symbol={}).".format(
+                self.log_prefix, trade_position.market_instrument_name
             )
         )

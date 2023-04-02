@@ -85,19 +85,19 @@ class ByBitProvider(base.BaseProvider):
     def get_trade_positions(
         self,
         trading_category: enums.TradingCategory,
-        market_instrument_symbol: str,
+        currency: common_enums.Currency,
         depth: int = 1,
         limit: int = 50,
     ) -> typing.List[messages.TradePosition]:
         try:
             response = self.get_rest_api_client().get_trade_positions(
                 depth=depth,
-                symbol=market_instrument_symbol,
+                currency=currency,
                 category=trading_category.convert_to_internal(provider=self.provider),
             )
         except rest_api_client_exceptions.ByBitClientError as e:
-            msg = "Unable to fetch trade positions from API (market_instrument_symbol={}, category={}). Error: {}".format(
-                market_instrument_symbol,
+            msg = "Unable to fetch trade positions from API (currency={}, category={}). Error: {}".format(
+                currency.name,
                 trading_category.name,
                 common_utils.get_exception_message(exception=e),
             )
@@ -118,7 +118,7 @@ class ByBitProvider(base.BaseProvider):
                 position_side=trade_position["side"],
                 position_size=trade_position["size"],
                 position_value=trade_position["value"],
-                entry_price=trade_position["entry_price"],
+                unrealised_pnl=trade_position["unrealised_pnl"],
                 created_at=datetime.datetime.fromtimestamp(
                     trade_position["created_at"]
                 ),

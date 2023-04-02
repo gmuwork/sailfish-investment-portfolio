@@ -29,7 +29,7 @@ class TradePosition(
             ("position_side", str),
             ("position_size", decimal.Decimal),
             ("position_value", decimal.Decimal),
-            ("entry_price", decimal.Decimal),
+            ("unrealised_pnl", decimal.Decimal),
             ("created_at", datetime.datetime),
             ("updated_at", datetime.datetime),
         ],

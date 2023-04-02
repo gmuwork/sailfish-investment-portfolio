@@ -6,6 +6,7 @@ import typing
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 
+from divisions.common import enums as common_enums
 from divisions.common import utils as common_utils
 from divisions.crypto import enums as crypto_enums
 from divisions.crypto.integrations.provider import factory as crypto_provider_factory
@@ -90,6 +91,23 @@ class Command(BaseCommand):
                 provider=self.provider
             ).create()
         )
+        logger.info(
+            "{} Importing unrealised PnL (currency={}).".format(
+                self.log_prefix, common_enums.Currency.USDT.name
+            )
+        )
+
+        try:
+            importer_service.import_trade_positions(
+                trading_category=self.trading_category,
+                currency=common_enums.Currency.USDT,
+            )
+        except Exception as e:
+            msg = "Unexpected exception occurred while importing trade positions. Error: {}".format(
+                common_utils.get_exception_message(exception=e)
+            )
+            logger.exception("{} {}".format(self.log_prefix, msg))
+
         for market_instrument in (
             crypto_models.MarketInstrument.objects.filter(
                 provider=self.provider.to_integer_choice(),
@@ -140,7 +158,7 @@ class Command(BaseCommand):
                 msg = "Unexpected exception occurred while importing trading data. Error: {}".format(
                     common_utils.get_exception_message(exception=e)
                 )
-                logger.exception("{} {}. Continue,".format(self.log_prefix, msg))
+                logger.exception("{} {}. Continue.".format(self.log_prefix, msg))
 
         logger.info(
             "{} Finished command '{}' (provider={}, trading_category={}, number_of_pages={}).".format(

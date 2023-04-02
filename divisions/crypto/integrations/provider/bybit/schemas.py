@@ -32,7 +32,7 @@ class TradePosition(Schema):
     side = fields.Str(required=True, allow_none=True, data_key="side")
     size = fields.Decimal(required=True, data_key="size")
     value = fields.Decimal(required=True, data_key="positionValue")
-    entry_price = fields.Decimal(required=True, data_key="entryPrice")
+    unrealised_pnl = fields.Decimal(required=True, data_key='unrealisedPnl')
     created_at = fields.Integer(required=True, data_key="createdTime")
     updated_at = fields.Integer(required=True, data_key="updatedTime")
 
