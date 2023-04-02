@@ -1,0 +1,1 @@
+USER_ACTIVATION_TOKEN_TYPE = 'user_activation'

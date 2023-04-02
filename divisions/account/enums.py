@@ -1,6 +1,11 @@
 import enum
 
 
+class AccountStatus(enum.Enum):
+    INACTIVE = 1
+    PENDING_ACTIVATION = 2
+    ACTIVE = 3
+
 class AccountTransactionType(enum.Enum):
     DEPOSIT = 1
     WITHDRAWAL = 2
